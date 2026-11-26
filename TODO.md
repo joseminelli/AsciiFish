@@ -5,7 +5,7 @@
 ## 0. Identidade visual
 - [x] **Ícone/logo do app** — peixe ASCII (`<o))))><`), legível em 16×16 até 256×256; gerar `.ico` multi-tamanho e `.png`
 - [x] Aplicar o ícone no `.exe` (`windows/runner/resources/app_icon.ico`), na bandeja (`assets/app_icon.ico`) e no instalador
-- [ ] **Banners**
+- [x] **Banners**
   - [x] Banner do README/GitHub (aquário ASCII + nome + Whiskline Studio)
   - [x] Banner lateral (164×314) e cabeçalho (55×55) do instalador
   - [x] Imagem de divulgação (`docs/promo.png`, 1920×1080, gerada por `tools/gen_identity.py`; ainda dá para trocar por uma captura real do app)
@@ -14,24 +14,25 @@
 ## 1. Instalador (Inno Setup)
 Objetivo: um único `AsciiFishPet-Setup.exe`, bonito e sem atrito.
 
-- [ ] Instalar o Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
-- [ ] Criar `installer/AsciiFishPet.iss` com:
-  - [ ] Nome: **ASCII Fish Pet** · Publisher: **Whiskline Studio** · versão vinda do `pubspec.yaml`
-  - [ ] `WizardStyle=modern`, idioma **pt-BR** (e talvez inglês como segundo idioma)
-  - [ ] Instalação por usuário (sem pedir administrador), pasta `%LOCALAPPDATA%\Programs\ASCII Fish Pet`
-  - [ ] **"Iniciar com o Windows" — marcado por padrão**, com opção de desmarcar
-  - [ ] Opções: atalho na área de trabalho, abrir ao terminar
-  - [ ] Fechar o app automaticamente se estiver rodando (ele vive na bandeja) ao instalar/atualizar/desinstalar
-  - [ ] Atualizar por cima sem perder o save (`%APPDATA%\com.asciifish\ascii_fish_pet\`)
-  - [ ] Desinstalador pergunta se quer apagar também o progresso salvo
-  - [ ] Info do arquivo (nome, versão, autor) e texto curto sobre o aviso do SmartScreen
-- [ ] Visual do instalador
-  - [ ] Logo da Whiskline Studio (ver `installer/assets/README.md`)
+- [x] Instalar o Inno Setup 6 (`winget install JRSoftware.InnoSetup`)
+- [x] Criar `installer/AsciiFishPet.iss` com:
+  - [x] Nome: **ASCII Fish Pet** · Publisher: **Whiskline Studio** · versão vinda do `pubspec.yaml`
+  - [x] `WizardStyle=modern`, idioma **pt-BR** (e talvez inglês como segundo idioma)
+  - [x] Instalação por usuário (sem pedir administrador), pasta `%LOCALAPPDATA%\Programs\ASCII Fish Pet`
+  - [x] **"Iniciar com o Windows" — marcado por padrão**, com opção de desmarcar
+  - [x] Opções: atalho na área de trabalho, abrir ao terminar
+  - [x] Fechar o app automaticamente se estiver rodando (ele vive na bandeja) ao instalar/atualizar/desinstalar
+  - [x] Atualizar por cima sem perder o save (`%APPDATA%\com.asciifish\ascii_fish_pet\`)
+  - [x] Desinstalador pergunta se quer apagar também o progresso salvo
+  - [x] Info do arquivo (nome, versão, autor) e texto curto sobre o aviso do SmartScreen
+- [x] Visual do instalador
+  - [x] Logo da Whiskline Studio (ver `installer/assets/README.md`)
   - [x] Banner lateral (164×314) e cabeçalho (55×55) com aquário ASCII na paleta do app
-  - [ ] Ícone do peixe (`.ico` multi-tamanho) — hoje o app usa o ícone padrão do Flutter
-  - [ ] Trocar também o ícone do `.exe` (`windows/runner/resources/app_icon.ico`) e da bandeja (`assets/app_icon.ico`)
-- [ ] "Iniciar com o Windows": definir se vem do instalador (atalho em `shell:startup`) e/ou de uma opção em Opções
-- [ ] Gerar o `Setup.exe`, instalar/desinstalar numa conta de teste e tirar screenshots de cada tela
+  - [x] Ícone do peixe (`.ico` multi-tamanho) — hoje o app usa o ícone padrão do Flutter
+  - [x] Trocar também o ícone do `.exe` (`windows/runner/resources/app_icon.ico`) e da bandeja (`assets/app_icon.ico`)
+- [x] "Iniciar com o Windows" vem do instalador (chave `HKCU\...\Run`). Falta ainda uma opção dentro do app (Opções) para ligar/desligar depois
+- [x] Gerar o `Setup.exe` (`scripts/release.ps1`) e testar instalar/desinstalar em modo silencioso
+- [ ] Revisar visualmente cada tela do assistente (screenshots) — falta testar a interface, só rodei em modo silencioso
 - [ ] (Opcional) Certificado de assinatura de código para acabar com o SmartScreen
 
 ## 2. Otimização (CPU hoje ≈ 3%)

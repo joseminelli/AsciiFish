@@ -89,13 +89,13 @@ BEGIN
     BEGIN
         BLOCK "040904e4"
         BEGIN
-            VALUE "CompanyName", "com.asciifish" "\0"
-            VALUE "FileDescription", "ascii_fish_pet" "\0"
+            VALUE "CompanyName", "Whiskline Studio" "\0"
+            VALUE "FileDescription", "ASCII Fish Pet" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "ascii_fish_pet" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2026 com.asciifish. All rights reserved." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Whiskline Studio. All rights reserved." "\0"
             VALUE "OriginalFilename", "ascii_fish_pet.exe" "\0"
-            VALUE "ProductName", "ascii_fish_pet" "\0"
+            VALUE "ProductName", "ASCII Fish Pet" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"
         END
     END
