@@ -36,8 +36,7 @@ class TopDragBar extends StatelessWidget {
             () => game.setAlwaysOnTop(!game.settings.alwaysOnTop),
           ),
           _IconBtn(Icons.settings, 'Menu', th.fg, () => game.setMenu(!game.menuOpen)),
-          _IconBtn(Icons.remove, 'Minimizar', th.fg, game.window.minimize),
-          _IconBtn(Icons.close, 'Fechar', th.fg, game.window.close),
+          _IconBtn(Icons.close, 'Esconder na bandeja', th.fg, game.window.hideToTray),
         ],
       ),
     );

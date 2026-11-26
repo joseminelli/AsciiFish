@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'app/app.dart';
 import 'app/game_controller.dart';
 import 'core/storage/save_repository.dart';
+import 'platform/tray_service.dart';
 import 'platform/windows_window_service.dart';
 
 Future<void> main() async {
@@ -25,6 +26,7 @@ Future<void> main() async {
 
   await window.init(data.settings);
   game.start();
+  await TrayService(game).init();
 
   runApp(AsciiFishApp(game: game));
 }

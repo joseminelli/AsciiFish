@@ -199,8 +199,13 @@ class GameController extends ChangeNotifier {
   }
 
   Future<void> setAlwaysOnTop(bool v) async {
-    settings.alwaysOnTop = v;
     await window.setAlwaysOnTop(v);
+    scheduleSave();
+    notifyListeners();
+  }
+
+  Future<void> setWidgetMode(bool v) async {
+    await window.setWidgetMode(v);
     scheduleSave();
     notifyListeners();
   }

@@ -34,7 +34,7 @@ class WindowsWindowService with WindowListener {
       maximumSize: maxSize,
       titleBarStyle: TitleBarStyle.hidden,
       windowButtonVisibility: false,
-      skipTaskbar: false,
+      skipTaskbar: true, // só aparece na bandeja (ícones ocultos)
       alwaysOnTop: s.alwaysOnTop,
       title: 'ASCII Fish Pet',
     );
@@ -43,7 +43,8 @@ class WindowsWindowService with WindowListener {
     await windowManager.waitUntilReadyToShow(options, () async {
       await windowManager.setPosition(pos);
       await windowManager.show();
-      await windowManager.focus();
+      await applyZOrder();
+      if (s.widgetMode && !s.alwaysOnTop) await _sendBackOnce();
     });
   }
 
@@ -68,16 +69,52 @@ class WindowsWindowService with WindowListener {
     return Offset(p.dx + sz.width - size.width - _margin, p.dy + sz.height - size.height - _margin);
   }
 
-  Future<void> setAlwaysOnTop(bool v) => windowManager.setAlwaysOnTop(v);
+  bool quitting = false;
+
+  /// Pin = sempre no topo. Caso contrário é uma janela normal: apps abertos por cima a cobrem
+  /// e ela fica visível sobre a área de trabalho (clicar no desktop não a esconde).
+  Future<void> applyZOrder() async {
+    final s = _s!;
+    await windowManager.setAlwaysOnTop(s.alwaysOnTop);
+  }
+
+  /// Modo widget: ao iniciar, vai para trás dos apps abertos (uma única vez, sem ficar "grudada").
+  Future<void> _sendBackOnce() async {
+    await windowManager.setAlwaysOnBottom(true);
+    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await windowManager.setAlwaysOnBottom(false);
+  }
+
+  Future<void> setAlwaysOnTop(bool v) async {
+    _s!.alwaysOnTop = v;
+    await applyZOrder();
+  }
+
+  Future<void> setWidgetMode(bool v) async {
+    _s!.widgetMode = v;
+    if (v && !_s!.alwaysOnTop) await _sendBackOnce();
+  }
+
+  Future<bool> get isVisible => windowManager.isVisible();
+
+  Future<void> hideToTray() => windowManager.hide();
+
+  /// Traz a janela para frente (menu da bandeja). No modo widget ela volta ao fundo ao perder o foco.
+  Future<void> showRaised() async {
+    await windowManager.show();
+    await windowManager.focus();
+  }
+
+  Future<void> quit() async {
+    quitting = true;
+    await windowManager.close();
+  }
 
   Future<void> snapToCorner() async {
     final size = await windowManager.getSize();
     await windowManager.setPosition(await _corner(size));
     await _store();
   }
-
-  Future<void> minimize() => windowManager.minimize();
-  Future<void> close() => windowManager.close();
 
   Future<void> _store() async {
     final s = _s;
@@ -101,10 +138,16 @@ class WindowsWindowService with WindowListener {
   void onWindowFocus() => onFocusChanged?.call(true);
 
   @override
-  void onWindowBlur() => onFocusChanged?.call(false);
+  void onWindowBlur() {
+    onFocusChanged?.call(false);
+  }
 
   @override
   Future<void> onWindowClose() async {
+    if (!quitting) {
+      await hideToTray(); // fechar = esconder na bandeja; "Sair" fica no menu do ícone
+      return;
+    }
     await onCloseRequested?.call();
     await windowManager.destroy();
   }

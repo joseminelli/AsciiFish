@@ -1,6 +1,7 @@
 class AppSettings {
   AppSettings({
     this.alwaysOnTop = false,
+    this.widgetMode = true,
     this.themeId = 'theme_oled',
     this.autoHideHud = true,
     this.fontSize = 13,
@@ -11,6 +12,7 @@ class AppSettings {
   });
 
   bool alwaysOnTop;
+  bool widgetMode; // fica atrás dos outros apps, como um widget de desktop
   String themeId;
   bool autoHideHud;
   double fontSize;
@@ -21,6 +23,7 @@ class AppSettings {
 
   Map<String, dynamic> toJson() => {
         'alwaysOnTop': alwaysOnTop,
+        'widgetMode': widgetMode,
         'themeId': themeId,
         'autoHideHud': autoHideHud,
         'fontSize': fontSize,
@@ -34,6 +37,7 @@ class AppSettings {
     final d = AppSettings();
     return AppSettings(
       alwaysOnTop: j['alwaysOnTop'] as bool? ?? d.alwaysOnTop,
+      widgetMode: j['widgetMode'] as bool? ?? d.widgetMode,
       themeId: j['themeId'] as String? ?? d.themeId,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,
       fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(10.0, 20.0),

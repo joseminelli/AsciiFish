@@ -156,6 +156,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           onChanged: on,
         );
     return [
+      sw('Modo widget (inicia atrás dos apps)', s.widgetMode, g.setWidgetMode),
       sw('Sempre no topo', s.alwaysOnTop, g.setAlwaysOnTop),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
       const SizedBox(height: 4),
