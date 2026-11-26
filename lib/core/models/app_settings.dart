@@ -7,6 +7,8 @@ class AppSettings {
     this.debugMode = false,
     this.fishReacts = true,
     this.autoHideHud = true,
+    this.autoUpdate = true,
+    this.lastUpdateCheck = 0,
     this.fontSize = 13,
     this.windowX,
     this.windowY,
@@ -21,6 +23,8 @@ class AppSettings {
   bool debugMode;
   bool fishReacts; // peixe segue o mouse e pula quando clicam perto dele
   bool autoHideHud;
+  bool autoUpdate; // procura atualizações ao abrir (no máx. 1x por dia)
+  int lastUpdateCheck; // epoch ms
   double fontSize;
   double? windowX;
   double? windowY;
@@ -35,6 +39,8 @@ class AppSettings {
     'debugMode': debugMode,
     'fishReacts': fishReacts,
     'autoHideHud': autoHideHud,
+    'autoUpdate': autoUpdate,
+    'lastUpdateCheck': lastUpdateCheck,
     'fontSize': fontSize,
     'windowX': windowX,
     'windowY': windowY,
@@ -52,6 +58,8 @@ class AppSettings {
       debugMode: j['debugMode'] as bool? ?? d.debugMode,
       fishReacts: j['fishReacts'] as bool? ?? d.fishReacts,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,
+      autoUpdate: j['autoUpdate'] as bool? ?? d.autoUpdate,
+      lastUpdateCheck: (j['lastUpdateCheck'] as num?)?.toInt() ?? 0,
       fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(
         10.0,
         20.0,

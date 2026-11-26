@@ -293,6 +293,27 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         g.setFishReacts,
       ),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
+      sw('Procurar atualizações ao abrir', s.autoUpdate, g.setAutoUpdate),
+      Row(
+        children: [
+          Expanded(
+            child: Text(
+              'Versão ${g.appVersion.isEmpty ? '...' : g.appVersion}'
+              '${g.updateMsg.isEmpty ? '' : '\n${g.updateMsg}'}',
+              style: base.copyWith(fontSize: 11),
+            ),
+          ),
+          TextButton(
+            onPressed: g.updateBusy
+                ? null
+                : (g.update != null ? g.installUpdate : g.checkUpdates),
+            child: Text(
+              g.update != null ? '[ Instalar ${g.update!.version} ]' : '[ Procurar ]',
+              style: base.copyWith(color: th.accent, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
       const SizedBox(height: 4),
       Text('Tamanho da fonte: ${s.fontSize.round()}'),
       Slider(

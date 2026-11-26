@@ -68,6 +68,10 @@ Baixe e execute o **`AsciiFishPet-Setup.exe`**. O instalador:
 - fecha o app se ele estiver rodando e atualiza por cima **sem perder o progresso**;
 - ao desinstalar, pergunta se você quer apagar também o progresso salvo.
 
+### Atualizações
+
+Em **Opções** há o botão **Procurar** (e uma opção para checar sozinho ao abrir, no máximo 1x por dia). Se houver versão nova nas [Releases](https://github.com/joseminelli/AsciiFish/releases), o app baixa o instalador, atualiza por cima e reabre, **sem perder o progresso** (o save fica em `%APPDATA%`, fora da pasta do app).
+
 > O Windows pode mostrar um aviso do SmartScreen porque o app ainda não tem assinatura digital: clique em **Mais informações → Executar assim mesmo**.
 
 ## Requisitos
@@ -99,7 +103,14 @@ Na raiz do projeto (PowerShell ou cmd):
 .elease     # tudo isso + gera o instalador (Inno Setup)
 ```
 
-Os dois aceitam `-SemClean` para pular o `flutter clean` (ex.: `.elease -SemClean`). Fecham o app antes, se estiver aberto.
+
+```powershell
+.\publish     # release + publica no GitHub (tag vX.Y.Z com o Setup.exe)
+```
+
+Para lançar uma versão: aumente o `version:` no `pubspec.yaml`, faça commit e push, e rode `.\publish -Notas "o que mudou"`. Requer o GitHub CLI (`winget install GitHub.cli` e `gh auth login`, uma vez). Os apps instalados detectam a Release sozinhos.
+
+Os dois primeiros aceitam `-SemClean` para pular o `flutter clean` (ex.: `.elease -SemClean`). Fecham o app antes, se estiver aberto.
 
 - O app fica em `build\windowsdunner\Release\` (para distribuir sem instalador, **leve a pasta inteira**: o `.exe` sozinho não abre).
 - O instalador fica em `installer\Output\AsciiFishPet-Setup.exe`, com a versão do `pubspec.yaml`. Requer o [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`).
@@ -146,6 +157,7 @@ Veja o [TODO.md](TODO.md) para o detalhamento. Resumo do que vem a seguir:
 
 - [x] **Identidade visual:** ícone do peixe ASCII, banners e imagem de divulgação.
 - [x] **Instalador** (Inno Setup) com "Iniciar com o Windows" marcado por padrão.
+- [x] Atualização automática pelas Releases do GitHub.
 - [ ] Opção dentro do app para ligar/desligar "Iniciar com o Windows".
 - [ ] **Otimização de CPU** (hoje cerca de 3% parado).
 - [ ] **Novo visual de Status e Loja.**

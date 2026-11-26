@@ -69,6 +69,8 @@ Root: HKCU; Subkey: "Software\Microsoft\Windows\CurrentVersion\Run"; ValueType: 
 
 [Run]
 Filename: "{app}\{#MyAppExe}"; Description: "{cm:LaunchProgram,{#MyAppName}}"; Flags: nowait postinstall skipifsilent
+; Atualização automática pelo app (/SILENT /RELAUNCH=1): reabre o app no final
+Filename: "{app}\{#MyAppExe}"; Flags: nowait; Check: Relaunch
 
 [Code]
 // O app vive na bandeja (sem janela visível), então fechamos pelo nome do processo.
@@ -77,6 +79,11 @@ var
   R: Integer;
 begin
   Exec(ExpandConstant('{sys}\taskkill.exe'), '/F /IM {#MyAppExe}', '', SW_HIDE, ewWaitUntilTerminated, R);
+end;
+
+function Relaunch: Boolean;
+begin
+  Result := ExpandConstant('{param:RELAUNCH|0}') = '1';
 end;
 
 function PrepareToInstall(var NeedsRestart: Boolean): String;

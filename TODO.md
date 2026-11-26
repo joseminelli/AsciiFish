@@ -62,3 +62,8 @@ Meta: bem abaixo de 1% parado, mantendo 60 FPS enquanto visível.
 - [ ] Migrar da camada `legacy` de `window_manager` / `screen_retriever` / `tray_manager` para a API nativa
 - [ ] Fonte monoespaçada embarcada (JetBrains Mono) no lugar de Consolas
 - [x] Inicializar repositório git + primeiro commit
+
+## 5. Atualizações automáticas (feito)
+- [x] App procura a última Release do GitHub (Opções → Procurar, e 1x/dia ao abrir), baixa o `Setup.exe` e atualiza por cima, reabrindo o app; o save não é tocado
+- [x] `.\publish` gera o instalador e cria a Release (`vX.Y.Z`) com o `Setup.exe`
+- [ ] Publicar a primeira Release (1.1.0) e testar a atualização de ponta a ponta com uma 1.1.1

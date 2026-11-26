@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import '../core/models/app_settings.dart';
 import '../core/models/ascii_theme.dart';
@@ -12,6 +13,7 @@ import '../core/models/shop_catalog.dart';
 import '../core/simulation/aquarium_engine.dart';
 import '../core/simulation/progression_service.dart';
 import '../core/storage/save_repository.dart';
+import '../platform/update_service.dart';
 import '../platform/windows_window_service.dart';
 import '../ui/painter/aquarium_painter.dart';
 
@@ -99,6 +101,72 @@ class GameController extends ChangeNotifier {
     engine.fish.y = engine.rows - 4.0;
     _autosave = Timer.periodic(const Duration(seconds: 15), (_) => saveNow());
     saveNow();
+    _initUpdates();
+  }
+
+  // ------------------------------------------------------------- atualizações
+
+  String appVersion = '';
+  UpdateInfo? update;
+  bool updateBusy = false;
+  String updateMsg = '';
+
+  Future<void> _initUpdates() async {
+    try {
+      appVersion = (await PackageInfo.fromPlatform()).version;
+    } catch (_) {}
+    notifyListeners();
+    final day = const Duration(hours: 20).inMilliseconds;
+    final due =
+        DateTime.now().millisecondsSinceEpoch - settings.lastUpdateCheck > day;
+    if (settings.autoUpdate && due) {
+      await Future<void>.delayed(const Duration(seconds: 20));
+      await checkUpdates(auto: true);
+    }
+  }
+
+  Future<void> checkUpdates({bool auto = false}) async {
+    if (updateBusy || appVersion.isEmpty) return;
+    updateBusy = true;
+    if (!auto) updateMsg = 'Procurando...';
+    notifyListeners();
+    try {
+      update = await UpdateService.check(appVersion);
+      settings.lastUpdateCheck = DateTime.now().millisecondsSinceEpoch;
+      scheduleSave();
+      if (update != null) {
+        updateMsg = 'Versão ${update!.version} disponível';
+        if (auto) showToast('Nova versão ${update!.version} em Opções');
+      } else if (!auto) {
+        updateMsg = 'Você está na versão mais recente';
+      }
+    } catch (_) {
+      if (!auto) updateMsg = 'Não foi possível verificar (sem internet?)';
+    }
+    updateBusy = false;
+    notifyListeners();
+  }
+
+  Future<void> installUpdate() async {
+    final u = update;
+    if (u == null || updateBusy) return;
+    updateBusy = true;
+    updateMsg = 'Baixando ${u.version}...';
+    notifyListeners();
+    try {
+      await saveNow(); // garante o save antes do app fechar
+      await UpdateService.downloadAndInstall(u);
+    } catch (_) {
+      updateBusy = false;
+      updateMsg = 'Falha ao baixar a atualização';
+      notifyListeners();
+    }
+  }
+
+  void setAutoUpdate(bool v) {
+    settings.autoUpdate = v;
+    scheduleSave();
+    notifyListeners();
   }
 
   @override
