@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 
 import '../../app/game_controller.dart';
+import '../../core/models/critter_sprites.dart';
 import '../../core/models/fish_sprites.dart';
 import '../../core/models/particle.dart';
 
@@ -174,22 +175,51 @@ class AquariumPainter extends CustomPainter {
       }
     }
 
-    // Companheiros.
+    // Companheiros (todos animados).
     for (final c in e.companions) {
-      if (c.kind == 'fish') {
-        text(
-          c.facing > 0 ? '><o>' : '<o><',
-          c.x,
-          c.y,
-          fishCol.withValues(alpha: 0.8),
-        );
-      } else {
-        text(
-          c.facing > 0 ? '=(:>' : '<:)=',
-          c.x,
-          c.y,
-          fishCol.withValues(alpha: 0.8),
-        );
+      final px = c.x * cw, py = c.y * ch;
+      switch (c.kind) {
+        case 'fish':
+          _wave(
+            canvas,
+            g,
+            CritterSprites.fish(c.facing > 0, (e.time * 2.5).floor()),
+            px,
+            py,
+            fishCol.withValues(alpha: 0.85),
+            amp: 0.8,
+            phase: e.time * 3.5,
+            k: 0.7,
+            reverse: c.facing > 0,
+          );
+        case 'crab':
+          final walking = c.vx.abs() > 0.1;
+          final claw = (e.time * (walking ? 1.6 : 0.5)).floor();
+          final blink = ((e.time + c.x) % 4) > 3.75;
+          _wave(
+            canvas,
+            g,
+            CritterSprites.crab(claw, blink),
+            px,
+            py,
+            const Color(0xFFE5533D),
+            amp: walking ? 0.8 : 0.3,
+            phase: e.time * 4,
+            k: 0,
+          );
+        default: // lula
+          _wave(
+            canvas,
+            g,
+            CritterSprites.squid(c.facing > 0, (e.time * 2).floor()),
+            px,
+            py,
+            const Color(0xFFB48CFF),
+            amp: 1.4,
+            phase: e.time * 3,
+            k: 0.9,
+            reverse: c.facing > 0,
+          );
       }
     }
 
@@ -214,7 +244,43 @@ class AquariumPainter extends CustomPainter {
       facingRight: f.facing > 0,
       tail: f.tailPhase.floor(),
     );
-    text(sprite, f.x, f.y, fishCol);
+    // O corpo ondula suavemente: fase e amplitude vêm do motor (integradas no tempo, sem saltos).
+    _wave(
+      canvas,
+      g,
+      sprite,
+      f.x * cw,
+      f.y * ch,
+      fishCol,
+      amp: f.waveAmp,
+      phase: f.wavePhase,
+      k: 0.55,
+      reverse: f.facing > 0,
+    );
+  }
+
+  /// Desenha [s] caractere a caractere com deslocamento vertical senoidal (efeito de onda).
+  /// [reverse] faz a fase começar pelo fim (sprite virado para a direita: cabeça no fim).
+  void _wave(
+    Canvas canvas,
+    GlyphCache g,
+    String s,
+    double px,
+    double py,
+    Color c, {
+    required double amp,
+    required double phase,
+    required double k,
+    bool reverse = false,
+  }) {
+    final runes = s.runes.toList();
+    var x = px;
+    for (var i = 0; i < runes.length; i++) {
+      final tp = g.get(String.fromCharCode(runes[i]), c);
+      final idx = reverse ? runes.length - 1 - i : i;
+      tp.paint(canvas, Offset(x, py + sin(phase - idx * k) * amp));
+      x += tp.width;
+    }
   }
 
   /// Sujeira bem visível: montinho marrom com contorno, brilho e fiapos de "fedor" subindo.

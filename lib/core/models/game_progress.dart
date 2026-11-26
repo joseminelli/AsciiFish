@@ -64,7 +64,7 @@ class GameProgress {
       hunger: (j['hunger'] as num?)?.toDouble() ?? d.hunger,
       happiness: (j['happiness'] as num?)?.toDouble() ?? d.happiness,
       cleanliness: (j['cleanliness'] as num?)?.toDouble() ?? d.cleanliness,
-      owned: set('owned')..addAll(d.owned),
+      owned: _migrate(set('owned')..addAll(d.owned)),
       achievements: set('achievements'),
       daysCared: set('daysCared'),
       foodId: j['foodId'] as String? ?? d.foodId,
@@ -76,4 +76,10 @@ class GameProgress {
           DateTime.now(),
     );
   }
+}
+
+/// Camarão virou caranguejo: quem já tinha o camarão ganha o caranguejo.
+Set<String> _migrate(Set<String> s) {
+  if (s.remove('comp_shrimp')) s.add('comp_crab');
+  return s;
 }

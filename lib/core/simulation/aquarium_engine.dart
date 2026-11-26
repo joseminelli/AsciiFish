@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import '../models/critter_sprites.dart';
 import '../models/fish_state.dart';
 import '../models/particle.dart';
 import '../models/plant.dart';
@@ -88,19 +89,26 @@ class AquariumEngine {
     _buildPlants();
   }
 
-  void setCompanions({required bool fishCompanion, required bool shrimp}) {
-    companions.removeWhere(
-      (c) =>
-          (c.kind == 'fish' && !fishCompanion) ||
-          (c.kind == 'shrimp' && !shrimp),
-    );
-    if (fishCompanion && !companions.any((c) => c.kind == 'fish')) {
-      companions.add(
-        Critter('fish', _rnd.nextDouble() * cols, 2 + _rnd.nextDouble() * 3),
-      );
-    }
-    if (shrimp && !companions.any((c) => c.kind == 'shrimp')) {
-      companions.add(Critter('shrimp', _rnd.nextDouble() * cols, rows - 2.0));
+  void setCompanions({
+    required bool fishCompanion,
+    required bool crab,
+    required bool squid,
+  }) {
+    bool want(String k) => switch (k) {
+      'fish' => fishCompanion,
+      'crab' => crab,
+      _ => squid,
+    };
+    companions.removeWhere((c) => !want(c.kind));
+    for (final k in const ['fish', 'crab', 'squid']) {
+      if (want(k) && !companions.any((c) => c.kind == k)) {
+        final w = CritterSprites.widthOf(k);
+        final x = _rnd.nextDouble() * max(1, cols - w);
+        final y = k == 'crab'
+            ? rows - 2.0
+            : _minY + _rnd.nextDouble() * (_maxY - _minY);
+        companions.add(Critter(k, x, y)..width = w);
+      }
     }
   }
 
@@ -327,7 +335,9 @@ class AquariumEngine {
       f.y = 0;
       f.vy = max(0, f.vy);
     }
-    f.tailPhase += dt * 12;
+    f.tailPhase += dt * 4;
+    f.wavePhase += dt * 6;
+    f.waveAmp += (1.8 - f.waveAmp) * min(1.0, 5 * dt);
     // Em pleno ar, corrige o rumo na direcao da comida que esta caindo.
     final food = _nearestFood();
     if (food != null && food.y < waterTop + 1) {
@@ -445,7 +455,11 @@ class AquariumEngine {
     // Inversao de direcao com histerese: o peixe desacelera, passa por zero e entao vira.
     if (f.vx > 0.6 && f.facing < 0) f.facing = 1;
     if (f.vx < -0.6 && f.facing > 0) f.facing = -1;
-    f.tailPhase += dt * (2 + sqrt(f.vx * f.vx + f.vy * f.vy) * 1.2);
+    // Animação calma: cauda no máximo ~3 trocas/s; onda 2,5–5 rad/s; amplitude suavizada.
+    final sp = sqrt(f.vx * f.vx + f.vy * f.vy);
+    f.tailPhase += dt * min(3.0, 1.0 + sp * 0.25);
+    f.wavePhase += dt * (2.5 + min(sp, 8.0) * 0.3);
+    f.waveAmp += ((0.8 + min(1.0, sp * 0.12)) - f.waveAmp) * min(1.0, 5 * dt);
 
     // Bolhas pela boca.
     _mouthT -= dt;
@@ -518,34 +532,43 @@ class AquariumEngine {
   void _updateCompanions(double dt) {
     for (final c in companions) {
       c.timer -= dt;
-      if (c.kind == 'fish') {
-        if (c.timer <= 0) {
-          c.timer = 2 + _rnd.nextDouble() * 4;
-          c.tx = _rnd.nextDouble() * (cols - 3);
-          c.ty = _minY + _rnd.nextDouble() * (_maxY - _minY);
-        }
-        final dx = c.tx - c.x, dy = c.ty - c.y;
-        final d = max(0.001, sqrt(dx * dx + dy * dy * 4));
-        final s = 2.5 * min(1.0, d / 3);
-        c.vx += (dx / d * s - c.vx) * min(1.0, 2 * dt);
-        c.vy += (dy / d * s - c.vy) * min(1.0, 2 * dt);
-        c.x = (c.x + c.vx * dt).clamp(0, cols - 3).toDouble();
-        c.y = (c.y + c.vy * dt).clamp(_minY, _maxY).toDouble();
-        if (c.vx > 0.4) c.facing = 1;
-        if (c.vx < -0.4) c.facing = -1;
-      } else {
+      final maxX = max(0, cols - c.width).toDouble();
+      if (c.kind == 'crab') {
         c.y = rows - 2.0;
         if (c.timer <= 0) {
           c.timer = 1.5 + _rnd.nextDouble() * 4;
           c.tx = _rnd.nextBool()
-              ? _rnd.nextDouble() * (cols - 4)
-              : c.x; // às vezes pausa
+              ? _rnd.nextDouble() * maxX
+              : c.x; // as vezes pausa
         }
         final dx = c.tx - c.x;
         if (dx.abs() > 0.2) {
           c.facing = dx > 0 ? 1 : -1;
-          c.x = (c.x + dx.sign * 1.6 * dt).clamp(0, cols - 4).toDouble();
+          c.vx = dx.sign * 2.4;
+          c.x = (c.x + c.vx * dt).clamp(0, maxX).toDouble();
+        } else {
+          c.vx = 0;
         }
+      } else {
+        // peixinho e lula nadam na agua; a lula avanca em jatos
+        if (c.timer <= 0) {
+          c.timer = (c.kind == 'squid' ? 3 : 2) + _rnd.nextDouble() * 4;
+          c.tx = _rnd.nextDouble() * maxX;
+          c.ty = _minY + _rnd.nextDouble() * (_maxY - _minY);
+        }
+        final dx = c.tx - c.x, dy = c.ty - c.y;
+        final d = max(0.001, sqrt(dx * dx + dy * dy * 4));
+        var s = 2.5 * min(1.0, d / 3);
+        if (c.kind == 'squid') {
+          final pulse = max(0.0, sin(time * 1.9 + c.width));
+          s = (0.6 + 6.0 * pulse * pulse) * min(1.0, d / 3 + 0.3);
+        }
+        c.vx += (dx / d * s - c.vx) * min(1.0, 3 * dt);
+        c.vy += (dy / d * s - c.vy) * min(1.0, 3 * dt);
+        c.x = (c.x + c.vx * dt).clamp(0, maxX).toDouble();
+        c.y = (c.y + c.vy * dt).clamp(_minY, _maxY).toDouble();
+        if (c.vx > 0.4) c.facing = 1;
+        if (c.vx < -0.4) c.facing = -1;
       }
     }
   }

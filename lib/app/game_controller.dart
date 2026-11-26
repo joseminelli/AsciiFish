@@ -78,8 +78,11 @@ class GameController extends ChangeNotifier {
       (c) => c.id == settings.fishColorId,
       orElse: () => kFishColors.first,
     );
-    if (fc.rainbow)
-      return HSVColor.fromAHSV(1, (t * 70) % 360, 0.6, 1).toColor();
+    if (fc.rainbow) {
+      // matiz em degraus de 6 graus: poucos valores distintos mantêm o cache de glifos estável
+      final hue = (((t * 70) % 360) / 6).floor() * 6.0;
+      return HSVColor.fromAHSV(1, hue, 0.6, 1).toColor();
+    }
     return fc.color ?? theme.fish;
   }
 
@@ -113,7 +116,8 @@ class GameController extends ChangeNotifier {
     engine.oxygen = o.contains('decor_oxygen');
     engine.setCompanions(
       fishCompanion: o.contains('comp_fish'),
-      shrimp: o.contains('comp_shrimp'),
+      crab: o.contains('comp_crab'),
+      squid: o.contains('comp_squid'),
     );
   }
 

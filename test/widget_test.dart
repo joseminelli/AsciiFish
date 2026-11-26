@@ -1,4 +1,5 @@
 import 'package:ascii_fish_pet/core/models/ascii_theme.dart';
+import 'package:ascii_fish_pet/core/models/critter_sprites.dart';
 import 'package:ascii_fish_pet/core/models/fish_sprites.dart';
 import 'package:ascii_fish_pet/core/models/game_progress.dart';
 import 'package:ascii_fish_pet/core/models/shop_catalog.dart';
@@ -12,7 +13,10 @@ void main() {
     for (var i = 0; i < 6000; i++) {
       e.update(1 / 60);
       expect(e.fish.x, inInclusiveRange(0, 40));
-      expect(e.fish.y, inInclusiveRange(0, 11)); // pode estar no ar durante um pulo
+      expect(
+        e.fish.y,
+        inInclusiveRange(0, 11),
+      ); // pode estar no ar durante um pulo
     }
   });
 
@@ -25,7 +29,10 @@ void main() {
     var maxAir = 0.0;
     for (var i = 0; i < 60 * 150; i++) {
       e.update(1 / 60);
-      if (e.fish.y < e.waterTop) maxAir = maxAir < e.waterTop - e.fish.y ? e.waterTop - e.fish.y : maxAir;
+      if (e.fish.y < e.waterTop)
+        maxAir = maxAir < e.waterTop - e.fish.y
+            ? e.waterTop - e.fish.y
+            : maxAir;
     }
     expect(jumps, greaterThan(0));
     expect(maxAir, greaterThan(0.5));
@@ -69,10 +76,38 @@ void main() {
     expect(noAr, isTrue);
   });
 
+  test('caranguejo e lula andam dentro do aquário', () {
+    final e = AquariumEngine(seed: 4)
+      ..waterRows = 6
+      ..resize(80, 18)
+      ..setCompanions(fishCompanion: true, crab: true, squid: true);
+    expect(e.companions.map((c) => c.kind).toSet(), {'fish', 'crab', 'squid'});
+    for (var i = 0; i < 60 * 60; i++) {
+      e.update(1 / 60);
+      for (final c in e.companions) {
+        expect(c.x, inInclusiveRange(0, 80 - c.width), reason: c.kind);
+        if (c.kind == 'crab') expect(c.y, e.rows - 2.0);
+      }
+    }
+  });
+
+  test('sprites dos companheiros: largura e espelhamento', () {
+    expect(CritterSprites.crab(0, false), r'(\/) (°,,°) (\/)');
+    expect(CritterSprites.squid(false, 0), '<コ:彡');
+    expect(CritterSprites.fish(false, 0), '<o)><');
+    expect(CritterSprites.fish(true, 0), '><(o>');
+    expect(
+      CritterSprites.widthOf('crab'),
+      CritterSprites.crab(0, false).length,
+    );
+  });
+
   test('catálogo: ids únicos e cada cor de peixe tem definição', () {
     final ids = kShopItems.map((i) => i.id).toList();
     expect(ids.toSet().length, ids.length);
-    for (final it in kShopItems.where((i) => i.category == ShopCategory.fishColor)) {
+    for (final it in kShopItems.where(
+      (i) => i.category == ShopCategory.fishColor,
+    )) {
       expect(kFishColors.any((c) => c.id == it.id), isTrue, reason: it.id);
     }
   });
@@ -104,7 +139,10 @@ void main() {
   });
 
   test('offline tem piso: peixe nunca morre de fome', () {
-    final p = GameProgress(hunger: 60, lastSavedAt: DateTime.now().subtract(const Duration(days: 5)));
+    final p = GameProgress(
+      hunger: 60,
+      lastSavedAt: DateTime.now().subtract(const Duration(days: 5)),
+    );
     ProgressionService(p).applyOffline();
     expect(p.hunger, greaterThanOrEqualTo(25));
   });

@@ -121,12 +121,20 @@ const kShopItems = [
     minLevel: 8,
   ),
   ShopItem(
-    'comp_shrimp',
-    'Camarão',
-    'Anda pelo fundo.',
+    'comp_crab',
+    'Caranguejo',
+    'Anda de lado pelo fundo: (\\/) (°,,°) (\\/)',
     ShopCategory.companion,
     200,
     minLevel: 10,
+  ),
+  ShopItem(
+    'comp_squid',
+    'Lula',
+    'Nada em jatos: <コ:彡',
+    ShopCategory.companion,
+    250,
+    minLevel: 12,
   ),
   // Cores do peixe
   ShopItem(
