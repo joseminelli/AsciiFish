@@ -44,7 +44,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                   for (final (i, t) in const [
                     'Status',
                     'Loja',
-                    'Opções',
+                    'Opçõesss',
                   ].indexed)
                     InkWell(
                       onTap: () => setState(() => _tab = i),
@@ -308,7 +308,9 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 ? null
                 : (g.update != null ? g.installUpdate : g.checkUpdates),
             child: Text(
-              g.update != null ? '[ Instalar ${g.update!.version} ]' : '[ Procurar ]',
+              g.update != null
+                  ? '[ Instalar ${g.update!.version} ]'
+                  : '[ Procurar ]',
               style: base.copyWith(color: th.accent, fontSize: 11),
             ),
           ),
