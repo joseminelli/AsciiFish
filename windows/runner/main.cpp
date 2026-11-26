@@ -7,6 +7,16 @@
 
 int APIENTRY wWinMain(_In_ HINSTANCE instance, _In_opt_ HINSTANCE prev,
                       _In_ wchar_t *command_line, _In_ int show_command) {
+  // Instância única: se o aquário já está rodando (vive na bandeja), este
+  // processo sai em silêncio. Use --multi para ignorar (útil em desenvolvimento).
+  HANDLE single_instance =
+      ::CreateMutexW(nullptr, TRUE, L"Local\\AsciiFishPet.SingleInstance");
+  if (::GetLastError() == ERROR_ALREADY_EXISTS &&
+      wcsstr(::GetCommandLineW(), L"--multi") == nullptr) {
+    if (single_instance) ::CloseHandle(single_instance);
+    return EXIT_SUCCESS;
+  }
+
   // Attach to console when present (e.g., 'flutter run') or create a
   // new console when running with a debugger.
   if (!::AttachConsole(ATTACH_PARENT_PROCESS) && ::IsDebuggerPresent()) {

@@ -1,4 +1,4 @@
-# Gera o instalador e publica uma Release no GitHub (tag vX.Y.Z, com o Setup.exe anexado).
+﻿# Gera o instalador e publica uma Release no GitHub (tag vX.Y.Z, com o Setup.exe anexado).
 # O app dos usuários procura essa Release para se atualizar sozinho.
 # Uso:  .\publish [-Notas "texto das novidades"] [-SemClean]
 # Requer o GitHub CLI:  winget install GitHub.cli   e   gh auth login   (uma vez)
@@ -10,13 +10,19 @@ try {
     if (-not (Get-Command gh -ErrorAction SilentlyContinue)) {
         throw 'GitHub CLI não encontrado. Instale com: winget install GitHub.cli  (depois: gh auth login)'
     }
+    $ErrorActionPreference = 'Continue'   # no PS 5.1, stderr do gh viraria exceção
     gh auth status *> $null
-    if ($LASTEXITCODE -ne 0) { throw 'Faça login primeiro: gh auth login' }
+    $logado = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = 'Stop'
+    if (-not $logado) { throw 'Faça login primeiro: gh auth login' }
 
     $ver = (Select-String -Path pubspec.yaml -Pattern '^version:\s*([\d\.]+)').Matches[0].Groups[1].Value
     $tag = "v$ver"
+    $ErrorActionPreference = 'Continue'
     gh release view $tag *> $null
-    if ($LASTEXITCODE -eq 0) { throw "A Release $tag já existe. Aumente o version: no pubspec.yaml." }
+    $existe = ($LASTEXITCODE -eq 0)
+    $ErrorActionPreference = 'Stop'
+    if ($existe) { throw "A Release $tag já existe. Aumente o version: no pubspec.yaml." }
 
     if (git status --porcelain) { Write-Warning 'Há alterações não commitadas: elas NÃO entram na tag, mas entram no build.' }
     git fetch --quiet

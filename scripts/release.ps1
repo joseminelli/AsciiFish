@@ -1,4 +1,4 @@
-# Tudo: flutter clean -> pub get -> build -> instalador (Inno Setup).
+﻿# Tudo: flutter clean -> pub get -> build -> instalador (Inno Setup).
 # Uso:  powershell -ExecutionPolicy Bypass -File scripts\release.ps1 [-SemClean]
 param([switch]$SemClean)
 $ErrorActionPreference = 'Stop'

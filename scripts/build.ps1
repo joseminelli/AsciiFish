@@ -1,4 +1,4 @@
-# Compila o app: flutter clean -> pub get -> build windows (release).
+﻿# Compila o app: flutter clean -> pub get -> build windows (release).
 # Uso:  powershell -ExecutionPolicy Bypass -File scripts\build.ps1 [-SemClean]
 param([switch]$SemClean)
 $ErrorActionPreference = 'Stop'

@@ -17,10 +17,6 @@ Uma faixa transparente na largura da tela, logo acima da barra de tarefas, com �
 
 Feito e distribuído pela **Whiskline Studio**.
 
-![ASCII Fish Pet](docs/promo.png)
-
----
-
 ## Recursos
 
 - **Aquário no desktop:** janela transparente e sem bordas, encaixada acima da taskbar, com click-through (só o peixe, a sujeira e o painel de controle capturam o mouse).
@@ -100,7 +96,8 @@ Na raiz do projeto (PowerShell ou cmd):
 
 ```powershell
 .uild       # flutter clean + pub get + build windows (release)
-.elease     # tudo isso + gera o instalador (Inno Setup)
+.
+elease     # tudo isso + gera o instalador (Inno Setup)
 ```
 
 
@@ -110,9 +107,11 @@ Na raiz do projeto (PowerShell ou cmd):
 
 Para lançar uma versão: aumente o `version:` no `pubspec.yaml`, faça commit e push, e rode `.\publish -Notas "o que mudou"`. Requer o GitHub CLI (`winget install GitHub.cli` e `gh auth login`, uma vez). Os apps instalados detectam a Release sozinhos.
 
-Os dois primeiros aceitam `-SemClean` para pular o `flutter clean` (ex.: `.elease -SemClean`). Fecham o app antes, se estiver aberto.
+Os dois primeiros aceitam `-SemClean` para pular o `flutter clean` (ex.: `.
+elease -SemClean`). Fecham o app antes, se estiver aberto.
 
-- O app fica em `build\windowsdunner\Release\` (para distribuir sem instalador, **leve a pasta inteira**: o `.exe` sozinho não abre).
+- O app fica em `build\windowsd
+unner\Release\` (para distribuir sem instalador, **leve a pasta inteira**: o `.exe` sozinho não abre).
 - O instalador fica em `installer\Output\AsciiFishPet-Setup.exe`, com a versão do `pubspec.yaml`. Requer o [Inno Setup 6](https://jrsoftware.org/isinfo.php) (`winget install JRSoftware.InnoSetup`).
 
 ### Identidade visual
@@ -144,7 +143,8 @@ lib/
 windows/runner/                       # runner Win32 (bloqueia minimizar/maximizar)
 test/                                 # testes de unidade do motor
 installer/                            # AsciiFishPet.iss (Inno Setup) e assets/ (logo, ícone, banners)
-scripts/                              # build.ps1 e release.ps1 (usados por .uild e .elease)
+scripts/                              # build.ps1 e release.ps1 (usados por .uild e .
+elease)
 tools/                                # gen_identity.py (ícone e banners)
 docs/                                 # banner e imagem de divulgação
 ```
