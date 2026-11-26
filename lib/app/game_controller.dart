@@ -250,6 +250,12 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> setWidgetMode(bool v) async {
+    await window.setWidgetMode(v);
+    scheduleSave();
+    notifyListeners();
+  }
+
   void setAutoHideHud(bool v) {
     settings.autoHideHud = v;
     scheduleSave();

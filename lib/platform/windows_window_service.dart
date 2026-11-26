@@ -1,4 +1,5 @@
 // ignore_for_file: deprecated_member_use
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -6,6 +7,7 @@ import 'package:screen_retriever/legacy.dart';
 import 'package:window_manager/legacy.dart';
 
 import '../core/models/app_settings.dart';
+import 'desktop_layer.dart';
 
 /// Janela transparente em faixa, encaixada na base da área útil da tela (logo acima da taskbar).
 class WindowsWindowService with WindowListener {
@@ -58,6 +60,7 @@ class WindowsWindowService with WindowListener {
       await dock();
       await windowManager.show();
       await applyZOrder();
+      _watchDesktopPeek();
     });
   }
 
@@ -70,7 +73,41 @@ class WindowsWindowService with WindowListener {
     await windowManager.setBounds(null, position: origin, size: size);
   }
 
-  Future<void> applyZOrder() => windowManager.setAlwaysOnTop(_s!.alwaysOnTop);
+  /// Pin = sempre no topo. Modo widget (padrão) = camada de desktop: sob os apps, sobre o papel de parede.
+  /// Senão, janela normal.
+  Future<void> applyZOrder() async {
+    final s = _s!;
+    await windowManager.setAlwaysOnTop(s.alwaysOnTop);
+    if (!s.alwaysOnTop && s.widgetMode) DesktopLayer.sendAboveDesktop();
+  }
+
+  Timer? _layerTimer;
+  bool _peeking = false;
+
+  /// Acompanha o Win+D: enquanto o desktop está à mostra o widget sobe; ao voltar, desce de novo.
+  void _watchDesktopPeek() {
+    _layerTimer ??= Timer.periodic(const Duration(milliseconds: 300), (_) {
+      final s = _s;
+      if (s == null || hidden || s.alwaysOnTop || !s.widgetMode) {
+        if (_peeking && s != null && !s.alwaysOnTop) windowManager.setAlwaysOnTop(false);
+        _peeking = false;
+        return;
+      }
+      final raised = DesktopLayer.desktopRaised();
+      if (raised && !_peeking) {
+        _peeking = true;
+        windowManager.setAlwaysOnTop(true); // o Progman fica topmost durante o Win+D
+      } else if (!raised && _peeking) {
+        _peeking = false;
+        windowManager.setAlwaysOnTop(false).then((_) => DesktopLayer.sendAboveDesktop());
+      }
+    });
+  }
+
+  Future<void> setWidgetMode(bool v) async {
+    _s!.widgetMode = v;
+    await applyZOrder();
+  }
 
   Future<void> setAlwaysOnTop(bool v) async {
     _s!.alwaysOnTop = v;
@@ -99,7 +136,11 @@ class WindowsWindowService with WindowListener {
   void onWindowFocus() => onFocusChanged?.call(true);
 
   @override
-  void onWindowBlur() => onFocusChanged?.call(false);
+  void onWindowBlur() {
+    onFocusChanged?.call(false);
+    final s = _s;
+    if (s != null && !hidden) applyZOrder(); // ao perder o foco volta para a camada de desktop
+  }
 
   @override
   Future<void> onWindowClose() async {
