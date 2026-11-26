@@ -38,7 +38,7 @@ class ClickThroughService {
       if (hot && !_hotkeyWas) game.triggerFeed();
       _hotkeyWas = hot;
       game.setHover(inWindow && game.overPanel(local));
-      if (inWindow) game.passiveHover(local);
+      game.passiveHover(local, inWindow: inWindow);
 
       final capture = inWindow && game.isInteractiveAt(local);
       if (capture != _capturing) {

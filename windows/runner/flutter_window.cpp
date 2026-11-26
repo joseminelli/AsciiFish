@@ -51,6 +51,25 @@ LRESULT
 FlutterWindow::MessageHandler(HWND hwnd, UINT const message,
                               WPARAM const wparam,
                               LPARAM const lparam) noexcept {
+  // Widget de desktop: nunca minimiza/maximiza (cliques repetidos, Aero Shake, duplo clique etc.).
+  switch (message) {
+    case WM_SYSCOMMAND: {
+      const UINT cmd = wparam & 0xFFF0;
+      if (cmd == SC_MINIMIZE || cmd == SC_MAXIMIZE) {
+        return 0;
+      }
+      break;
+    }
+    case WM_NCLBUTTONDBLCLK:
+      return 0;
+    case WM_SIZE:
+      if (wparam == SIZE_MINIMIZED) {
+        // Se algo ainda conseguir minimizar (ex.: "minimizar tudo"), restaura na hora.
+        PostMessage(hwnd, WM_SYSCOMMAND, SC_RESTORE, 0);
+      }
+      break;
+  }
+
   // Give Flutter, including plugins, an opportunity to handle window messages.
   if (flutter_controller_) {
     std::optional<LRESULT> result =

@@ -1,4 +1,4 @@
-enum ShopCategory { theme, food, decor, companion }
+enum ShopCategory { theme, fishColor, food, decor, companion }
 
 class ShopItem {
   const ShopItem(
@@ -127,5 +127,45 @@ const kShopItems = [
     ShopCategory.companion,
     200,
     minLevel: 10,
+  ),
+  // Cores do peixe
+  ShopItem(
+    'fcolor_default',
+    'Cor do tema',
+    'A cor padrão do peixe.',
+    ShopCategory.fishColor,
+    0,
+  ),
+  ShopItem(
+    'fcolor_gold',
+    'Dourado',
+    'Peixe dourado.',
+    ShopCategory.fishColor,
+    40,
+  ),
+  ShopItem(
+    'fcolor_red',
+    'Vermelho',
+    'Peixe vermelho.',
+    ShopCategory.fishColor,
+    40,
+  ),
+  ShopItem('fcolor_blue', 'Azul', 'Peixe azul.', ShopCategory.fishColor, 40),
+  ShopItem('fcolor_green', 'Verde', 'Peixe verde.', ShopCategory.fishColor, 40),
+  ShopItem('fcolor_pink', 'Rosa', 'Peixe rosa.', ShopCategory.fishColor, 60),
+  ShopItem(
+    'fcolor_white',
+    'Branco',
+    'Peixe branco.',
+    ShopCategory.fishColor,
+    60,
+  ),
+  ShopItem(
+    'fcolor_rainbow',
+    'Arco-íris',
+    'A cor muda o tempo todo.',
+    ShopCategory.fishColor,
+    200,
+    minLevel: 5,
   ),
 ];

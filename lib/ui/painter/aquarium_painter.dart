@@ -60,6 +60,7 @@ class AquariumPainter extends CustomPainter {
     final g = game.glyphs;
     final cw = g.cell.width, ch = g.cell.height;
     final owned = game.progress.owned;
+    final fishCol = game.fishColor(e.time);
 
     void text(String s, double col, double row, Color c) {
       g.get(s, c).paint(canvas, Offset(col * cw, row * ch));
@@ -166,6 +167,8 @@ class AquariumPainter extends CustomPainter {
         final o = Offset(p.x * cw + cw / 2, p.y * ch + ch / 2);
         canvas.drawCircle(o, 6, Paint()..color = c.withValues(alpha: 0.25));
         canvas.drawCircle(o, 3, Paint()..color = c);
+      } else if (p.type == ParticleType.dirt) {
+        _paintDirt(canvas, p, cw, ch, e.time, th.isDark);
       } else {
         text(p.ch, p.x, p.y, c);
       }
@@ -178,14 +181,14 @@ class AquariumPainter extends CustomPainter {
           c.facing > 0 ? '><o>' : '<o><',
           c.x,
           c.y,
-          th.fish.withValues(alpha: 0.8),
+          fishCol.withValues(alpha: 0.8),
         );
       } else {
         text(
           c.facing > 0 ? '=(:>' : '<:)=',
           c.x,
           c.y,
-          th.fish.withValues(alpha: 0.8),
+          fishCol.withValues(alpha: 0.8),
         );
       }
     }
@@ -211,7 +214,59 @@ class AquariumPainter extends CustomPainter {
       facingRight: f.facing > 0,
       tail: f.tailPhase.floor(),
     );
-    text(sprite, f.x, f.y, th.fish);
+    text(sprite, f.x, f.y, fishCol);
+  }
+
+  /// Sujeira bem visível: montinho marrom com contorno, brilho e fiapos de "fedor" subindo.
+  void _paintDirt(
+    Canvas canvas,
+    Particle p,
+    double cw,
+    double ch,
+    double t,
+    bool dark,
+  ) {
+    final seed = (p.x0 * 7.31).floor();
+    final w = cw * (1.7 + (seed % 3) * 0.35); // largura varia por partícula
+    final h = ch * 0.62;
+    final cx = p.x * cw + cw / 2;
+    final base = p.y * ch + ch * 0.95;
+    final body = Rect.fromCenter(
+      center: Offset(cx, base - h / 2),
+      width: w,
+      height: h,
+    );
+
+    final fill = Paint()..color = const Color(0xFF8A5A24);
+    final edge = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.4
+      ..color = dark ? const Color(0xFFE6B87A) : const Color(0xFF2B1A08);
+    canvas.drawOval(body, fill);
+    canvas.drawOval(body, edge);
+    canvas.drawOval(
+      Rect.fromCenter(
+        center: body.center.translate(-w * 0.18, -h * 0.18),
+        width: w * 0.35,
+        height: h * 0.3,
+      ),
+      Paint()..color = const Color(0xFFC48A4A),
+    );
+
+    // fiapos subindo
+    for (var i = 0; i < 2; i++) {
+      final ph = (t * 0.9 + i * 0.5 + seed * 0.13) % 1.0;
+      final sx =
+          cx + (i == 0 ? -w * 0.2 : w * 0.2) + sin((t + i) * 3 + seed) * 2.5;
+      final sy = body.top - ph * ch * 1.1;
+      canvas.drawCircle(
+        Offset(sx, sy),
+        1.8,
+        Paint()
+          ..color = (dark ? const Color(0xFFD8C49A) : const Color(0xFF6B5B45))
+              .withValues(alpha: (1 - ph) * 0.8),
+      );
+    }
   }
 
   @override

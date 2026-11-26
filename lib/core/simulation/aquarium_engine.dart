@@ -38,7 +38,6 @@ class AquariumEngine {
   void Function()? onJump;
   static const _g = 16.0; // gravidade do pulo (linhas/s^2)
   double _jumpT = 25;
-  double _airCool = 0;
 
   double _bubbleT = 1;
   double _dirtT = 3;
@@ -150,6 +149,25 @@ class AquariumEngine {
     final before = particles.length;
     particles.removeWhere((p) => p.type == ParticleType.dirt);
     return before - particles.length;
+  }
+
+  /// Debug: cria sujeira na hora.
+  void spawnDirt(int n) {
+    for (var i = 0; i < n; i++) {
+      particles.add(
+        Particle(
+          ParticleType.dirt,
+          _rnd.nextDouble() * (cols - 1),
+          rows - 2.0,
+          const [',', '.', ';', '`'][_rnd.nextInt(4)],
+        ),
+      );
+    }
+  }
+
+  /// Debug: força um pulo agora (se houver ar suficiente).
+  void forceJump() {
+    if (fish.mode != FishMode.jumping && airRows >= 2) _launch();
   }
 
   /// Remove a sujeira mais próxima do ponto (em células). Retorna true se limpou algo.
@@ -313,7 +331,6 @@ class AquariumEngine {
       _updateJump(dt);
       return;
     }
-    _airCool -= dt;
     final activity = 0.5 + 0.5 * (cleanliness / 100);
     final tired = hunger < 25 ? 0.6 : 1.0;
     final food = _nearestFood();
@@ -344,21 +361,6 @@ class AquariumEngine {
       tx = _curiousX > f.x + f.width / 2 ? _curiousX - f.width : _curiousX;
       ty = _curiousY.clamp(_minY, _maxY).toDouble();
       speed = 6 + cols / 60;
-      // Cursor no ar (acima da agua): o peixe vem por baixo e salta na direcao dele.
-      if (_curiousY < waterTop - 0.5 &&
-          airRows >= 3 &&
-          _airCool <= 0 &&
-          (_curiousX - f.mouthX).abs() < 5 &&
-          f.y <= waterTop + 2.2) {
-        _airCool = 5;
-        _launch(
-          apex: (waterTop - _curiousY + 0.5)
-              .clamp(1.5, airRows - 1.0)
-              .toDouble(),
-          vx: ((_curiousX - f.mouthX) * 1.5).clamp(-8.0, 8.0),
-        );
-        return;
-      }
     } else {
       f.mode = FishMode.wandering;
       _jumpT -= dt;

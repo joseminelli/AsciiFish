@@ -1,3 +1,4 @@
+import 'package:ascii_fish_pet/core/models/ascii_theme.dart';
 import 'package:ascii_fish_pet/core/models/fish_sprites.dart';
 import 'package:ascii_fish_pet/core/models/game_progress.dart';
 import 'package:ascii_fish_pet/core/models/shop_catalog.dart';
@@ -49,6 +50,14 @@ void main() {
     }
     expect(pulou, greaterThanOrEqualTo(3)); // na maioria dos casos ele salta
     expect(comeu, greaterThanOrEqualTo(10)); // e a comida é comida
+  });
+
+  test('catálogo: ids únicos e cada cor de peixe tem definição', () {
+    final ids = kShopItems.map((i) => i.id).toList();
+    expect(ids.toSet().length, ids.length);
+    for (final it in kShopItems.where((i) => i.category == ShopCategory.fishColor)) {
+      expect(kFishColors.any((c) => c.id == it.id), isTrue, reason: it.id);
+    }
   });
 
   test('peixe come a comida solta', () {

@@ -98,3 +98,22 @@ const kThemes = [
 
 AsciiTheme themeById(String id) =>
     kThemes.firstWhere((t) => t.id == id, orElse: () => kThemes.first);
+
+/// Cores personalizadas do peixe (null = cor do tema; rainbow = ciclo de matiz).
+class FishColor {
+  const FishColor(this.id, this.color, {this.rainbow = false});
+  final String id;
+  final Color? color;
+  final bool rainbow;
+}
+
+const kFishColors = [
+  FishColor('fcolor_default', null),
+  FishColor('fcolor_gold', Color(0xFFFFC21A)),
+  FishColor('fcolor_red', Color(0xFFFF4D4D)),
+  FishColor('fcolor_blue', Color(0xFF4DA3FF)),
+  FishColor('fcolor_green', Color(0xFF4DFF88)),
+  FishColor('fcolor_pink', Color(0xFFFF7AC8)),
+  FishColor('fcolor_white', Color(0xFFF2F2F2)),
+  FishColor('fcolor_rainbow', null, rainbow: true),
+];

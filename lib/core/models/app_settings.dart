@@ -3,6 +3,8 @@ class AppSettings {
     this.alwaysOnTop = false,
     this.widgetMode = true,
     this.themeId = 'theme_oled',
+    this.fishColorId = 'fcolor_default',
+    this.debugMode = false,
     this.autoHideHud = true,
     this.fontSize = 13,
     this.windowX,
@@ -14,6 +16,8 @@ class AppSettings {
   bool alwaysOnTop;
   bool widgetMode; // fica atrás dos outros apps, como um widget de desktop
   String themeId;
+  String fishColorId;
+  bool debugMode;
   bool autoHideHud;
   double fontSize;
   double? windowX;
@@ -25,6 +29,8 @@ class AppSettings {
     'alwaysOnTop': alwaysOnTop,
     'widgetMode': widgetMode,
     'themeId': themeId,
+    'fishColorId': fishColorId,
+    'debugMode': debugMode,
     'autoHideHud': autoHideHud,
     'fontSize': fontSize,
     'windowX': windowX,
@@ -39,6 +45,8 @@ class AppSettings {
       alwaysOnTop: j['alwaysOnTop'] as bool? ?? d.alwaysOnTop,
       widgetMode: j['widgetMode'] as bool? ?? d.widgetMode,
       themeId: j['themeId'] as String? ?? d.themeId,
+      fishColorId: j['fishColorId'] as String? ?? d.fishColorId,
+      debugMode: j['debugMode'] as bool? ?? d.debugMode,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,
       fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(
         10.0,

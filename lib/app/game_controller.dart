@@ -71,6 +71,18 @@ class GameController extends ChangeNotifier {
   double _clock = 0;
 
   AsciiTheme get theme => themeById(settings.themeId);
+
+  /// Cor atual do peixe (personalizada, arco-íris animado ou a do tema).
+  Color fishColor(double t) {
+    final fc = kFishColors.firstWhere(
+      (c) => c.id == settings.fishColorId,
+      orElse: () => kFishColors.first,
+    );
+    if (fc.rainbow)
+      return HSVColor.fromAHSV(1, (t * 70) % 360, 0.6, 1).toColor();
+    return fc.color ?? theme.fish;
+  }
+
   FishStage get stage => FishSprites.stageFor(progress.level);
 
   void start() {
@@ -201,20 +213,26 @@ class GameController extends ChangeNotifier {
       feed(x: cx); // Ctrl+clique na água solta comida no X do clique
   }
 
-  /// Cursor sobre a água (mesmo em click-through): o peixe vem olhar.
-  void passiveHover(Offset local) {
+  Offset? _lastCursor;
+
+  /// Mouse em qualquer lugar da área de trabalho: enquanto ele se move, o peixe vem olhar (só o X
+  /// importa; ele continua na água). Parado há ~3 s, o peixe volta a nadar sozinho.
+  void passiveHover(Offset local, {required bool inWindow}) {
     final cw = glyphs.cell.width, ch = glyphs.cell.height;
-    if (!overPanel(local)) {
-      engine.attract(local.dx / cw, local.dy / ch);
-      // dica discreta (poucas vezes por sessão) ao passar sobre a água sem Ctrl
-      if (local.dy >= engine.waterTop * ch &&
-          !ctrlHeld &&
-          _hints < 3 &&
-          _clock - _lastHint > 90) {
-        _lastHint = _clock;
-        _hints++;
-        showToast('Ctrl+clique na água para alimentar');
-      }
+    final moved = _lastCursor == null || (local - _lastCursor!).distance > 3;
+    _lastCursor = local;
+    if (local.dx < 0 || local.dx > window.size.width) return; // outro monitor
+    if (inWindow && overPanel(local)) return;
+    if (moved) engine.attract(local.dx / cw, local.dy / ch);
+    // dica discreta (poucas vezes por sessão) ao passar sobre a água sem Ctrl
+    if (inWindow &&
+        local.dy >= engine.waterTop * ch &&
+        !ctrlHeld &&
+        _hints < 3 &&
+        _clock - _lastHint > 90) {
+      _lastHint = _clock;
+      _hints++;
+      showToast('Ctrl+clique na água para alimentar');
     }
   }
 
@@ -255,10 +273,10 @@ class GameController extends ChangeNotifier {
     for (final d in engine.particles) {
       if (d.type == ParticleType.dirt &&
           Rect.fromLTWH(
-            d.x * cw - 5,
-            d.y * ch - 5,
-            cw + 10,
-            ch + 10,
+            d.x * cw - cw * 0.9,
+            d.y * ch - 4,
+            cw * 2.8,
+            ch + 8,
           ).contains(p)) {
         return true;
       }
@@ -278,6 +296,7 @@ class GameController extends ChangeNotifier {
   bool isEquipped(ShopItem i) => switch (i.category) {
     ShopCategory.theme => settings.themeId == i.id,
     ShopCategory.food => progress.foodId == i.id,
+    ShopCategory.fishColor => settings.fishColorId == i.id,
     _ => owns(i),
   };
 
@@ -304,6 +323,8 @@ class GameController extends ChangeNotifier {
     if (i.category == ShopCategory.theme) {
       settings.themeId = i.id;
       themeId.value = i.id;
+    } else if (i.category == ShopCategory.fishColor) {
+      settings.fishColorId = i.id;
     } else if (i.category == ShopCategory.food) {
       progress.foodId = i.id;
     }
@@ -321,6 +342,77 @@ class GameController extends ChangeNotifier {
     await window.setWidgetMode(v);
     scheduleSave();
     notifyListeners();
+  }
+
+  // ------------------------------------------------------------- debug
+
+  void setDebugMode(bool v) {
+    settings.debugMode = v;
+    scheduleSave();
+    notifyListeners();
+  }
+
+  void debugAddPearls(int n) {
+    progress.pearls += n;
+    notifyListeners();
+    scheduleSave();
+  }
+
+  void debugAddLevels(int n) {
+    for (var i = 0; i < n; i++) {
+      prog.addXp(progress.xpToNextLevel - progress.xp);
+    }
+    notifyListeners();
+    scheduleSave();
+  }
+
+  void debugUnlockAll() {
+    for (final it in kShopItems) {
+      progress.owned.add(it.id);
+    }
+    _syncEngine();
+    prog.checkAchievements();
+    showToast('Tudo desbloqueado');
+    notifyListeners();
+    scheduleSave();
+  }
+
+  void debugSpawnDirt() {
+    engine.spawnDirt(8);
+    notifyListeners();
+  }
+
+  void debugJump() => engine.forceJump();
+
+  void debugSetHunger(double v) {
+    progress.hunger = v;
+    notifyListeners();
+  }
+
+  void debugReset() {
+    progress
+      ..level = 1
+      ..xp = 0
+      ..pearls = 20
+      ..hunger = 80
+      ..happiness = 80
+      ..cleanliness = 100
+      ..feedCount = 0
+      ..cleanCount = 0
+      ..interactCount = 0
+      ..foodId = 'food_basic'
+      ..owned.clear()
+      ..owned.addAll({'theme_oled', 'food_basic', 'fcolor_default'})
+      ..achievements.clear()
+      ..daysCared.clear();
+    settings
+      ..themeId = 'theme_oled'
+      ..fishColorId = 'fcolor_default';
+    themeId.value = 'theme_oled';
+    _syncEngine();
+    showToast('Progresso resetado');
+    notifyListeners();
+    scheduleSave();
   }
 
   void setAutoHideHud(bool v) {

@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 import 'dart:async';
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
@@ -8,6 +9,20 @@ import 'package:window_manager/legacy.dart';
 
 import '../core/models/app_settings.dart';
 import 'desktop_layer.dart';
+
+/// Log de eventos raros da janela (esconder/minimizar/fechar), para diagnóstico.
+void _eventLog(String msg) {
+  try {
+    final dir = Platform.environment['APPDATA'];
+    if (dir == null) return;
+    final f = File('$dir\\com.asciifish\\ascii_fish_pet\\events.log');
+    if (f.existsSync() && f.lengthSync() > 200000) f.deleteSync();
+    f.writeAsStringSync(
+      '${DateTime.now().toIso8601String()} $msg\n',
+      mode: FileMode.append,
+    );
+  } catch (_) {}
+}
 
 /// Janela transparente em faixa, encaixada na base da área útil da tela (logo acima da taskbar).
 class WindowsWindowService with WindowListener {
@@ -129,6 +144,8 @@ class WindowsWindowService with WindowListener {
       windowManager.setIgnoreMouseEvents(ignore);
 
   Future<void> hideToTray() async {
+    final trace = StackTrace.current.toString().split('\n').take(6).join('\n');
+    _eventLog('hideToTray chamado de:\n$trace');
     hidden = true;
     await windowManager.hide();
   }
@@ -146,6 +163,12 @@ class WindowsWindowService with WindowListener {
 
   @override
   void onWindowFocus() => onFocusChanged?.call(true);
+
+  @override
+  void onWindowMinimize() => _eventLog('onWindowMinimize');
+
+  @override
+  void onWindowRestore() => _eventLog('onWindowRestore');
 
   @override
   void onWindowBlur() {

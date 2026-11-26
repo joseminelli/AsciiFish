@@ -83,7 +83,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 children: switch (_tab) {
                   0 => _status(th, base),
                   1 => _shop(th, base),
-                  _ => _options(th, base),
+                  _ => [..._options(th, base), ..._debug(th, base)],
                 },
               ),
             ),
@@ -97,7 +97,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
     final p = g.progress;
     final sprite = FishSprites.frame(p.level, facingRight: false, tail: 0);
     return [
-      Text(sprite, style: base.copyWith(color: th.fish, fontSize: 16)),
+      Text(sprite, style: base.copyWith(color: g.fishColor(0), fontSize: 16)),
       Text('${g.stage.name} · Nível ${p.level}'),
       Text('XP ${p.xp}/${p.xpToNextLevel}'),
       const SizedBox(height: 6),
@@ -106,6 +106,15 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
       ),
       Text(
         'Refeições ${p.feedCount}  Limpezas ${p.cleanCount}  Dias ${p.daysCared.length}',
+      ),
+      const SizedBox(height: 10),
+      Text('Como ganhar pérolas', style: base.copyWith(color: th.accent)),
+      Text(
+        '• Alimentar com fome < 60: +1 por floco\n'
+        '• Subir de nível: +10 + nível\n'
+        '• Limpar 3+ sujeiras de uma vez: +1\n'
+        '• Cada conquista: +15',
+        style: base.copyWith(fontSize: 11),
       ),
       const SizedBox(height: 10),
       Text('Conquistas', style: base.copyWith(color: th.accent)),
@@ -128,6 +137,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
   List<Widget> _shop(AsciiTheme th, TextStyle base) {
     const titles = {
       ShopCategory.theme: 'Temas',
+      ShopCategory.fishColor: 'Cores do peixe',
       ShopCategory.food: 'Rações',
       ShopCategory.decor: 'Decorações',
       ShopCategory.companion: 'Companheiros',
@@ -144,7 +154,9 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         final owned = g.owns(it);
         final equipped = g.isEquipped(it);
         final selectable =
-            cat == ShopCategory.theme || cat == ShopCategory.food;
+            cat == ShopCategory.theme ||
+            cat == ShopCategory.fishColor ||
+            cat == ShopCategory.food;
         String action;
         VoidCallback? onTap;
         if (!owned) {
@@ -164,6 +176,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
               padding: const EdgeInsets.symmetric(vertical: 3),
               child: Row(
                 children: [
+                  if (cat == ShopCategory.fishColor) _swatch(it, th),
                   Expanded(
                     child: Text(
                       '${it.name}\n${it.desc}',
@@ -184,6 +197,78 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
       }
     }
     return out;
+  }
+
+  Widget _swatch(ShopItem it, AsciiTheme th) {
+    final fc = kFishColors.firstWhere(
+      (c) => c.id == it.id,
+      orElse: () => kFishColors.first,
+    );
+    final color = fc.color ?? th.fish;
+    return Container(
+      width: 14,
+      height: 14,
+      margin: const EdgeInsets.only(right: 8),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: fc.rainbow ? null : color,
+        gradient: fc.rainbow
+            ? const SweepGradient(
+                colors: [
+                  Color(0xFFFF4D4D),
+                  Color(0xFFFFC21A),
+                  Color(0xFF4DFF88),
+                  Color(0xFF4DA3FF),
+                  Color(0xFFFF7AC8),
+                  Color(0xFFFF4D4D),
+                ],
+              )
+            : null,
+        border: Border.all(color: th.fg.withValues(alpha: 0.5)),
+      ),
+    );
+  }
+
+  List<Widget> _debug(AsciiTheme th, TextStyle base) {
+    Widget b(String label, VoidCallback f) => Padding(
+      padding: const EdgeInsets.only(right: 6, bottom: 4),
+      child: OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          side: BorderSide(color: th.accent.withValues(alpha: 0.6)),
+        ),
+        onPressed: f,
+        child: Text(
+          label,
+          style: base.copyWith(fontSize: 11, color: th.accent),
+        ),
+      ),
+    );
+    return [
+      const SizedBox(height: 10),
+      SwitchListTile(
+        dense: true,
+        contentPadding: EdgeInsets.zero,
+        title: Text('Modo debug (testes)', style: base),
+        value: g.settings.debugMode,
+        onChanged: g.setDebugMode,
+      ),
+      if (g.settings.debugMode)
+        Wrap(
+          children: [
+            b('+500 pérolas', () => g.debugAddPearls(500)),
+            b('+1 nível', () => g.debugAddLevels(1)),
+            b('+5 níveis', () => g.debugAddLevels(5)),
+            b('Desbloquear tudo', g.debugUnlockAll),
+            b('Sujar a água', g.debugSpawnDirt),
+            b('Pular agora', g.debugJump),
+            b('Fome 10%', () => g.debugSetHunger(10)),
+            b('Fome 100%', () => g.debugSetHunger(100)),
+            b('Resetar progresso', g.debugReset),
+          ],
+        ),
+    ];
   }
 
   List<Widget> _options(AsciiTheme th, TextStyle base) {
