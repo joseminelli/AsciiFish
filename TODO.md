@@ -3,13 +3,13 @@
 > Feito e distribuído pela **Whiskline Studio**.
 
 ## 0. Identidade visual
-- [ ] **Ícone/logo do app** — peixe ASCII (`<o))))><`), legível em 16×16 até 256×256; gerar `.ico` multi-tamanho e `.png`
-- [ ] Aplicar o ícone no `.exe` (`windows/runner/resources/app_icon.ico`), na bandeja (`assets/app_icon.ico`) e no instalador
+- [x] **Ícone/logo do app** — peixe ASCII (`<o))))><`), legível em 16×16 até 256×256; gerar `.ico` multi-tamanho e `.png`
+- [x] Aplicar o ícone no `.exe` (`windows/runner/resources/app_icon.ico`), na bandeja (`assets/app_icon.ico`) e no instalador
 - [ ] **Banners**
-  - [ ] Banner do README/GitHub (aquário ASCII + nome + Whiskline Studio)
-  - [ ] Banner lateral (164×314) e cabeçalho (55×55) do instalador
+  - [x] Banner do README/GitHub (aquário ASCII + nome + Whiskline Studio)
+  - [x] Banner lateral (164×314) e cabeçalho (55×55) do instalador
   - [ ] Imagem de divulgação / captura de tela para a página de download
-- [ ] Guardar os arquivos-fonte em `installer/assets/` (e uma pasta `docs/` para o banner do README)
+- [x] Guardar os arquivos-fonte em `installer/assets/` (e uma pasta `docs/` para o banner do README)
 
 ## 1. Instalador (Inno Setup)
 Objetivo: um único `AsciiFishPet-Setup.exe`, bonito e sem atrito.
@@ -27,7 +27,7 @@ Objetivo: um único `AsciiFishPet-Setup.exe`, bonito e sem atrito.
   - [ ] Info do arquivo (nome, versão, autor) e texto curto sobre o aviso do SmartScreen
 - [ ] Visual do instalador
   - [ ] Logo da Whiskline Studio (ver `installer/assets/README.md`)
-  - [ ] Banner lateral (164×314) e cabeçalho (55×55) com aquário ASCII na paleta do app
+  - [x] Banner lateral (164×314) e cabeçalho (55×55) com aquário ASCII na paleta do app
   - [ ] Ícone do peixe (`.ico` multi-tamanho) — hoje o app usa o ícone padrão do Flutter
   - [ ] Trocar também o ícone do `.exe` (`windows/runner/resources/app_icon.ico`) e da bandeja (`assets/app_icon.ico`)
 - [ ] "Iniciar com o Windows": definir se vem do instalador (atalho em `shell:startup`) e/ou de uma opção em Opções

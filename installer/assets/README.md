@@ -1,12 +1,9 @@
 # Assets do instalador
 
-Coloque aqui a logo da **Whiskline Studio**:
+| Arquivo | Origem |
+|---|---|
+| `whiskline.png` | logo da Whiskline Studio (branca/verde, para fundos escuros) — **fornecida** |
+| `app_icon.ico` / `app_icon.png` | ícone do app — gerado por `tools/gen_identity.py` |
+| `wizard-large.bmp` (164×314), `wizard-small.bmp` (55×55) | imagens do assistente do Inno Setup — geradas |
 
-| Arquivo | Formato | Observação |
-|---|---|---|
-| `whiskline-logo.png` | PNG, fundo transparente | pelo menos 512×512 (versão colorida) |
-| `whiskline-logo-light.png` | PNG, fundo transparente | *(opcional)* versão clara, para fundos escuros |
-| `whiskline-logo.svg` | SVG | *(opcional)* se existir, gero os tamanhos a partir dele |
-
-O instalador usa a logo no banner lateral e no cabeçalho do assistente.
-Os demais arquivos desta pasta (ícone do peixe, banner ASCII) serão gerados depois.
+Para regenerar tudo: `python tools/gen_identity.py` (requer Pillow).
