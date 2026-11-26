@@ -41,17 +41,31 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
               child: Row(
                 children: [
                   const SizedBox(width: 6),
-                  for (final (i, t) in const ['Status', 'Loja', 'Opções'].indexed)
+                  for (final (i, t) in const [
+                    'Status',
+                    'Loja',
+                    'Opções',
+                  ].indexed)
                     InkWell(
                       onTap: () => setState(() => _tab = i),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
-                        child: Text(_tab == i ? '[$t]' : ' $t ',
-                            style: base.copyWith(color: _tab == i ? th.accent : th.fg)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 6,
+                        ),
+                        child: Text(
+                          _tab == i ? '[$t]' : ' $t ',
+                          style: base.copyWith(
+                            color: _tab == i ? th.accent : th.fg,
+                          ),
+                        ),
                       ),
                     ),
                   const Spacer(),
-                  Text('● ${g.progress.pearls}', style: base.copyWith(color: th.food)),
+                  Text(
+                    '● ${g.progress.pearls}',
+                    style: base.copyWith(color: th.food),
+                  ),
                   IconButton(
                     visualDensity: VisualDensity.compact,
                     iconSize: 16,
@@ -87,8 +101,12 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
       Text('${g.stage.name} · Nível ${p.level}'),
       Text('XP ${p.xp}/${p.xpToNextLevel}'),
       const SizedBox(height: 6),
-      Text('Fome ${p.hunger.round()}  Humor ${p.happiness.round()}  Limpeza ${p.cleanliness.round()}'),
-      Text('Refeições ${p.feedCount}  Limpezas ${p.cleanCount}  Dias ${p.daysCared.length}'),
+      Text(
+        'Fome ${p.hunger.round()}  Humor ${p.happiness.round()}  Limpeza ${p.cleanliness.round()}',
+      ),
+      Text(
+        'Refeições ${p.feedCount}  Limpezas ${p.cleanCount}  Dias ${p.daysCared.length}',
+      ),
       const SizedBox(height: 10),
       Text('Conquistas', style: base.copyWith(color: th.accent)),
       for (final a in kAchievements)
@@ -97,7 +115,11 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           child: Text(
             '${p.achievements.contains(a.id) ? '[x]' : '[ ]'} ${a.name}\n      ${a.desc}',
             style: base.copyWith(
-                fontSize: 11, color: th.fg.withValues(alpha: p.achievements.contains(a.id) ? 1 : 0.5)),
+              fontSize: 11,
+              color: th.fg.withValues(
+                alpha: p.achievements.contains(a.id) ? 1 : 0.5,
+              ),
+            ),
           ),
         ),
     ];
@@ -112,18 +134,22 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
     };
     final out = <Widget>[];
     for (final cat in ShopCategory.values) {
-      out.add(Padding(
-        padding: const EdgeInsets.only(top: 6, bottom: 2),
-        child: Text(titles[cat]!, style: base.copyWith(color: th.accent)),
-      ));
+      out.add(
+        Padding(
+          padding: const EdgeInsets.only(top: 6, bottom: 2),
+          child: Text(titles[cat]!, style: base.copyWith(color: th.accent)),
+        ),
+      );
       for (final it in kShopItems.where((i) => i.category == cat)) {
         final owned = g.owns(it);
         final equipped = g.isEquipped(it);
-        final selectable = cat == ShopCategory.theme || cat == ShopCategory.food;
+        final selectable =
+            cat == ShopCategory.theme || cat == ShopCategory.food;
         String action;
         VoidCallback? onTap;
         if (!owned) {
-          action = '[${it.price}●${it.minLevel > 1 ? ' Nv${it.minLevel}' : ''}]';
+          action =
+              '[${it.price}●${it.minLevel > 1 ? ' Nv${it.minLevel}' : ''}]';
           onTap = () => g.buy(it);
         } else if (selectable) {
           action = equipped ? '[em uso]' : '[usar]';
@@ -131,21 +157,30 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         } else {
           action = '[ok]';
         }
-        out.add(InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text('${it.name}\n${it.desc}',
-                      style: base.copyWith(fontSize: 11), maxLines: 2, overflow: TextOverflow.ellipsis),
-                ),
-                Text(action, style: base.copyWith(color: owned ? th.fg : th.food)),
-              ],
+        out.add(
+          InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 3),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '${it.name}\n${it.desc}',
+                      style: base.copyWith(fontSize: 11),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Text(
+                    action,
+                    style: base.copyWith(color: owned ? th.fg : th.food),
+                  ),
+                ],
+              ),
             ),
           ),
-        ));
+        );
       }
     }
     return out;
@@ -154,14 +189,18 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
   List<Widget> _options(AsciiTheme th, TextStyle base) {
     final s = g.settings;
     Widget sw(String label, bool v, ValueChanged<bool> on) => SwitchListTile(
-          dense: true,
-          contentPadding: EdgeInsets.zero,
-          title: Text(label, style: base),
-          value: v,
-          onChanged: on,
-        );
+      dense: true,
+      contentPadding: EdgeInsets.zero,
+      title: Text(label, style: base),
+      value: v,
+      onChanged: on,
+    );
     return [
-      sw('Modo widget (sob os apps, sobre o desktop)', s.widgetMode, g.setWidgetMode),
+      sw(
+        'Modo widget (sob os apps, sobre o desktop)',
+        s.widgetMode,
+        g.setWidgetMode,
+      ),
       sw('Sempre no topo', s.alwaysOnTop, g.setAlwaysOnTop),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
       const SizedBox(height: 4),
@@ -185,14 +224,18 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         alignment: Alignment.centerLeft,
         child: TextButton(
           onPressed: g.snapToCorner,
-          child: Text('[ Reencaixar na barra de tarefas ]',
-              style: base.copyWith(color: th.accent, fontSize: 11)),
+          child: Text(
+            '[ Reencaixar na barra de tarefas ]',
+            style: base.copyWith(color: th.accent, fontSize: 11),
+          ),
         ),
       ),
       const SizedBox(height: 8),
       Text('Atalhos', style: base.copyWith(color: th.accent)),
-      Text('F / Espaço  alimentar\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
-          style: base.copyWith(fontSize: 11)),
+      Text(
+        'F / Espaço  alimentar\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
+        style: base.copyWith(fontSize: 11),
+      ),
     ];
   }
 }

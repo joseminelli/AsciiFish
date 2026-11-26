@@ -12,11 +12,19 @@ class Achievement {
 }
 
 const kAchievements = [
-  Achievement('first_meal', 'Primeira Refeição', 'Alimente o peixe pela primeira vez.'),
+  Achievement(
+    'first_meal',
+    'Primeira Refeição',
+    'Alimente o peixe pela primeira vez.',
+  ),
   Achievement('clean_water', 'Água Cristalina', 'Limpe o aquário 5 vezes.'),
   Achievement('level5', 'Nível 5', 'Alcance o nível 5.'),
   Achievement('theme_collector', 'Colecionador de Temas', 'Possua 3 temas.'),
-  Achievement('three_days', '3 Dias de Cuidado', 'Cuide do peixe em 3 dias diferentes.'),
+  Achievement(
+    'three_days',
+    '3 Dias de Cuidado',
+    'Cuide do peixe em 3 dias diferentes.',
+  ),
 ];
 
 /// XP, níveis, moedas, conquistas e decaimento (online e offline). Sem dependência de Flutter.
@@ -53,7 +61,8 @@ class ProgressionService {
     final away = DateTime.now().difference(p.lastSavedAt);
     if (away.inMinutes < 1) return;
     final secs = min(away.inSeconds, maxOfflineSeconds) * 0.5;
-    double soft(double old, double decay, double floor) => _c(max(old - decay * secs, min(old, floor)));
+    double soft(double old, double decay, double floor) =>
+        _c(max(old - decay * secs, min(old, floor)));
     p.hunger = soft(p.hunger, hungerDecay, 25);
     p.cleanliness = soft(p.cleanliness, cleanDecay, 30);
     p.happiness = soft(p.happiness, 0.01, 30);
@@ -63,7 +72,8 @@ class ProgressionService {
 
   void markDay() {
     final n = DateTime.now();
-    final key = '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
+    final key =
+        '${n.year}-${n.month.toString().padLeft(2, '0')}-${n.day.toString().padLeft(2, '0')}';
     if (p.daysCared.add(key)) checkAchievements();
   }
 
@@ -73,7 +83,9 @@ class ProgressionService {
     p.happiness = _c(p.happiness + 1.5);
     p.feedCount++;
     if (before >= 95) {
-      p.cleanliness = _c(p.cleanliness - 1.5); // empanturrado: sem XP, suja a água
+      p.cleanliness = _c(
+        p.cleanliness - 1.5,
+      ); // empanturrado: sem XP, suja a água
     } else {
       addXp(before < 40 ? f.xp * 2 : f.xp); // alimentar com fome rende bônus
       if (before < 60) p.pearls += 1;
@@ -124,13 +136,14 @@ class ProgressionService {
 
   void checkAchievements() {
     bool ok(String id) => switch (id) {
-          'first_meal' => p.feedCount >= 1,
-          'clean_water' => p.cleanCount >= 5,
-          'level5' => p.level >= 5,
-          'theme_collector' => p.owned.where((o) => o.startsWith('theme_')).length >= 3,
-          'three_days' => p.daysCared.length >= 3,
-          _ => false,
-        };
+      'first_meal' => p.feedCount >= 1,
+      'clean_water' => p.cleanCount >= 5,
+      'level5' => p.level >= 5,
+      'theme_collector' =>
+        p.owned.where((o) => o.startsWith('theme_')).length >= 3,
+      'three_days' => p.daysCared.length >= 3,
+      _ => false,
+    };
     for (final a in kAchievements) {
       if (!p.achievements.contains(a.id) && ok(a.id)) {
         p.achievements.add(a.id);

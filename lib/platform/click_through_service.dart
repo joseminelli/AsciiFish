@@ -15,7 +15,8 @@ class ClickThroughService {
   bool _busy = false;
   bool? _capturing;
 
-  void start() => _timer = Timer.periodic(const Duration(milliseconds: 50), (_) => _poll());
+  void start() =>
+      _timer = Timer.periodic(const Duration(milliseconds: 50), (_) => _poll());
 
   void stop() => _timer?.cancel();
 
@@ -28,6 +29,7 @@ class ClickThroughService {
       final local = cursor - win.origin;
       final inWindow = (Offset.zero & win.size).contains(local);
 
+      game.cursorLocal = inWindow ? local : null;
       game.setHover(inWindow && game.overPanel(local));
       if (inWindow) game.passiveHover(local);
 

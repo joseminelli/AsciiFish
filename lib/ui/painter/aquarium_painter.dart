@@ -25,12 +25,12 @@ class GlyphCache {
   final Map<String, TextPainter> _cache = {};
 
   TextStyle style(Color c) => TextStyle(
-        fontFamily: kMonoFamily,
-        fontFamilyFallback: kMonoFallback,
-        fontSize: fontSize,
-        color: c,
-        height: 1.0,
-      );
+    fontFamily: kMonoFamily,
+    fontFamilyFallback: kMonoFallback,
+    fontSize: fontSize,
+    color: c,
+    height: 1.0,
+  );
 
   TextPainter get(String s, Color c) {
     if (_cache.length > 800) {
@@ -40,7 +40,10 @@ class GlyphCache {
       _cache.clear();
     }
     return _cache.putIfAbsent('${c.toARGB32()}|$s', () {
-      return TextPainter(text: TextSpan(text: s, style: style(c)), textDirection: TextDirection.ltr)..layout();
+      return TextPainter(
+        text: TextSpan(text: s, style: style(c)),
+        textDirection: TextDirection.ltr,
+      )..layout();
     });
   }
 }
@@ -72,14 +75,22 @@ class AquariumPainter extends CustomPainter {
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [th.accent.withValues(alpha: 0.10), th.accent.withValues(alpha: 0.30)],
+          colors: [
+            th.accent.withValues(alpha: 0.10),
+            th.accent.withValues(alpha: 0.30),
+          ],
         ).createShader(waterRect),
     );
 
     // Superficie ondulante.
     final wave = Path()..moveTo(0, surfaceY);
     for (var x = 0.0; x <= size.width; x += 6) {
-      wave.lineTo(x, surfaceY + sin(x * 0.045 + e.time * 2.2) * 1.8 + sin(x * 0.013 - e.time) * 1.2);
+      wave.lineTo(
+        x,
+        surfaceY +
+            sin(x * 0.045 + e.time * 2.2) * 1.8 +
+            sin(x * 0.013 - e.time) * 1.2,
+      );
     }
     canvas.drawPath(
       wave,
@@ -94,7 +105,12 @@ class AquariumPainter extends CustomPainter {
     for (var k = 0; k * 9 < e.cols; k++) {
       final col = k * 9 + sin(e.time * 0.8 + k * 1.7) * 2.5;
       final row = wt + 1 + ((k * 7) % depth);
-      text('~', col, row, th.accent.withValues(alpha: 0.16 + 0.1 * sin(e.time + k)));
+      text(
+        '~',
+        col,
+        row,
+        th.accent.withValues(alpha: 0.16 + 0.1 * sin(e.time + k)),
+      );
     }
 
     // Areia.
@@ -152,15 +168,43 @@ class AquariumPainter extends CustomPainter {
     // Companheiros.
     for (final c in e.companions) {
       if (c.kind == 'fish') {
-        text(c.facing > 0 ? '><o>' : '<o><', c.x, c.y, th.fish.withValues(alpha: 0.8));
+        text(
+          c.facing > 0 ? '><o>' : '<o><',
+          c.x,
+          c.y,
+          th.fish.withValues(alpha: 0.8),
+        );
       } else {
-        text(c.facing > 0 ? '=(:>' : '<:)=', c.x, c.y, th.fish.withValues(alpha: 0.8));
+        text(
+          c.facing > 0 ? '=(:>' : '<:)=',
+          c.x,
+          c.y,
+          th.fish.withValues(alpha: 0.8),
+        );
+      }
+    }
+
+    // Mira de alimentação: linha tracejada no X do mouse.
+    final cur = game.cursorLocal;
+    if (game.feedArmed && cur != null) {
+      final cx = cur.dx / cw;
+      for (var r = 0; r < e.waterTop; r++) {
+        text(
+          r == 0 ? 'v' : ':',
+          cx,
+          r.toDouble(),
+          th.food.withValues(alpha: r == 0 ? 1 : 0.45),
+        );
       }
     }
 
     // Peixe principal.
     final f = e.fish;
-    final sprite = FishSprites.frame(game.progress.level, facingRight: f.facing > 0, tail: f.tailPhase.floor());
+    final sprite = FishSprites.frame(
+      game.progress.level,
+      facingRight: f.facing > 0,
+      tail: f.tailPhase.floor(),
+    );
     text(sprite, f.x, f.y, th.fish);
   }
 

@@ -38,7 +38,10 @@ class AsciiFishApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'ASCII Fish Pet',
           theme: buildTheme(t),
-          home: Scaffold(backgroundColor: Colors.transparent, body: AquariumScreen(game: game)),
+          home: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: AquariumScreen(game: game),
+          ),
         );
       },
     );

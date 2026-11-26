@@ -31,6 +31,26 @@ void main() {
     expect(e.fish.y, greaterThanOrEqualTo(e.waterTop)); // terminou na agua
   });
 
+  test('peixe pula para pegar comida que cai no ar', () {
+    var pulou = 0;
+    var comeu = 0;
+    for (final seed in [1, 2, 3, 4, 5]) {
+      final e = AquariumEngine(seed: seed)
+        ..waterRows = 6
+        ..resize(80, 18);
+      e.onEat = (_) => comeu++;
+      e.dropFood(40, 'food_basic');
+      var jumped = false;
+      for (var i = 0; i < 60 * 12; i++) {
+        e.update(1 / 60);
+        if (e.fish.y < e.waterTop) jumped = true;
+      }
+      if (jumped) pulou++;
+    }
+    expect(pulou, greaterThanOrEqualTo(3)); // na maioria dos casos ele salta
+    expect(comeu, greaterThanOrEqualTo(10)); // e a comida é comida
+  });
+
   test('peixe come a comida solta', () {
     final e = AquariumEngine(seed: 2)..resize(40, 14);
     var eaten = 0;

@@ -49,8 +49,10 @@ class AquariumEngine {
   double _tx = 10;
   double _ty = 5;
 
-  int get dirtCount => particles.where((p) => p.type == ParticleType.dirt).length;
-  int get foodCount => particles.where((p) => p.type == ParticleType.food).length;
+  int get dirtCount =>
+      particles.where((p) => p.type == ParticleType.dirt).length;
+  int get foodCount =>
+      particles.where((p) => p.type == ParticleType.food).length;
 
   double get _minY => waterTop + 1.0;
   double get _maxY => max(_minY, rows - 3.0);
@@ -87,9 +89,15 @@ class AquariumEngine {
   }
 
   void setCompanions({required bool fishCompanion, required bool shrimp}) {
-    companions.removeWhere((c) => (c.kind == 'fish' && !fishCompanion) || (c.kind == 'shrimp' && !shrimp));
+    companions.removeWhere(
+      (c) =>
+          (c.kind == 'fish' && !fishCompanion) ||
+          (c.kind == 'shrimp' && !shrimp),
+    );
     if (fishCompanion && !companions.any((c) => c.kind == 'fish')) {
-      companions.add(Critter('fish', _rnd.nextDouble() * cols, 2 + _rnd.nextDouble() * 3));
+      companions.add(
+        Critter('fish', _rnd.nextDouble() * cols, 2 + _rnd.nextDouble() * 3),
+      );
     }
     if (shrimp && !companions.any((c) => c.kind == 'shrimp')) {
       companions.add(Critter('shrimp', _rnd.nextDouble() * cols, rows - 2.0));
@@ -102,12 +110,14 @@ class AquariumEngine {
     final n = (cols / (plantStyle == 1 ? 7 : 11)).round().clamp(2, 14);
     final maxH = max(2, (_wr * (plantStyle == 1 ? 0.55 : 0.4)).floor());
     for (var i = 0; i < n; i++) {
-      plants.add(Plant(
-        x: (i + 0.5) * cols / n + (r.nextDouble() - 0.5) * 2,
-        height: 2 + r.nextInt(maxH - 1),
-        freq: 1.2 + r.nextDouble() * 1.2,
-        phase: r.nextDouble() * pi * 2,
-      ));
+      plants.add(
+        Plant(
+          x: (i + 0.5) * cols / n + (r.nextDouble() - 0.5) * 2,
+          height: 2 + r.nextInt(maxH - 1),
+          freq: 1.2 + r.nextDouble() * 1.2,
+          phase: r.nextDouble() * pi * 2,
+        ),
+      );
     }
   }
 
@@ -116,11 +126,20 @@ class AquariumEngine {
   /// Solta flocos de comida no topo.
   void dropFood(double x, String tag, {int count = 3, bool bright = false}) {
     for (var i = 0; i < count; i++) {
-      final fx = (x + (_rnd.nextDouble() - 0.5) * 3).clamp(0, cols - 1).toDouble();
-      final p = Particle(ParticleType.food, fx, max(0.0, waterTop - 3.0) - i * 0.7, const ['*', '•', '.'][_rnd.nextInt(3)],
-          tag: tag, bright: bright)
-        ..phase = _rnd.nextDouble() * pi * 2
-        ..vy = 0.5;
+      final fx = (x + (_rnd.nextDouble() - 0.5) * 3)
+          .clamp(0, cols - 1)
+          .toDouble();
+      final p =
+          Particle(
+              ParticleType.food,
+              fx,
+              -i * 0.7,
+              const ['*', '•', '.'][_rnd.nextInt(3)],
+              tag: tag,
+              bright: bright,
+            )
+            ..phase = _rnd.nextDouble() * pi * 2
+            ..vy = 0.5;
       particles.add(p);
     }
   }
@@ -161,20 +180,32 @@ class AquariumEngine {
   void spawnBubbles(double x, double y, int n, {bool bright = false}) {
     for (var i = 0; i < n; i++) {
       final size = _rnd.nextInt(3);
-      final p = Particle(ParticleType.bubble, x + (_rnd.nextDouble() - 0.5), y - i * 0.4,
-          const ['.', '°', 'o'][size], bright: bright)
-        ..vy = 1.5 + _rnd.nextDouble() * 2 + size * 0.4
-        ..phase = _rnd.nextDouble() * pi * 2;
+      final p =
+          Particle(
+              ParticleType.bubble,
+              x + (_rnd.nextDouble() - 0.5),
+              y - i * 0.4,
+              const ['.', '°', 'o'][size],
+              bright: bright,
+            )
+            ..vy = 1.5 + _rnd.nextDouble() * 2 + size * 0.4
+            ..phase = _rnd.nextDouble() * pi * 2;
       particles.add(p);
     }
   }
 
   void spawnSplash(double x, int n) {
     for (var i = 0; i < n; i++) {
-      particles.add(Particle(ParticleType.splash, x + (_rnd.nextDouble() - 0.5) * 2, waterTop + 0.3,
-          const ['.', '°', "'", ','][_rnd.nextInt(4)])
-        ..vx = (_rnd.nextDouble() - 0.5) * 8
-        ..vy = -(3 + _rnd.nextDouble() * 6));
+      particles.add(
+        Particle(
+            ParticleType.splash,
+            x + (_rnd.nextDouble() - 0.5) * 2,
+            waterTop + 0.3,
+            const ['.', '°', "'", ','][_rnd.nextInt(4)],
+          )
+          ..vx = (_rnd.nextDouble() - 0.5) * 8
+          ..vy = -(3 + _rnd.nextDouble() * 6),
+      );
     }
   }
 
@@ -200,8 +231,14 @@ class AquariumEngine {
       final dirtiness = (100 - cleanliness) / 100;
       _dirtT = 4 + _rnd.nextDouble() * 4 - dirtiness * 3;
       if (dirtCount < 14) {
-        particles.add(Particle(ParticleType.dirt, _rnd.nextDouble() * (cols - 1), rows - 2.0,
-            const [',', '.', ';', '`'][_rnd.nextInt(4)]));
+        particles.add(
+          Particle(
+            ParticleType.dirt,
+            _rnd.nextDouble() * (cols - 1),
+            rows - 2.0,
+            const [',', '.', ';', '`'][_rnd.nextInt(4)],
+          ),
+        );
       }
     }
   }
@@ -220,13 +257,15 @@ class AquariumEngine {
     return best;
   }
 
-  void _launch() {
+  void _launch({double? apex, double? vx}) {
     final f = fish;
-    final apex = min(1.5 + _rnd.nextDouble() * max(0.5, airRows - 2.8), airRows - 1.0);
-    f.vy = -sqrt(2 * _g * apex);
-    f.vx = f.facing * (3 + _rnd.nextDouble() * 5);
+    final a =
+        apex ??
+        min(1.5 + _rnd.nextDouble() * max(0.5, airRows - 2.8), airRows - 1.0);
+    f.vy = -sqrt(2 * _g * a);
+    f.vx = vx ?? f.facing * (3 + _rnd.nextDouble() * 5);
     f.mode = FishMode.jumping;
-    _jumpT = 30 + _rnd.nextDouble() * 60;
+    _jumpT = max(_jumpT, 10) + (apex == null ? 30 + _rnd.nextDouble() * 60 : 0);
     spawnSplash(f.x + f.width / 2, 8);
     onJump?.call();
   }
@@ -251,6 +290,13 @@ class AquariumEngine {
       f.vy = max(0, f.vy);
     }
     f.tailPhase += dt * 12;
+    // Em pleno ar, corrige o rumo na direcao da comida que esta caindo.
+    final food = _nearestFood();
+    if (food != null && food.y < waterTop + 1) {
+      final want = ((food.x - f.mouthX) * 3).clamp(-9.0, 9.0);
+      f.vx += (want - f.vx) * min(1.0, 5 * dt);
+    }
+    _tryEat();
     if (f.vy > 0 && f.y >= waterTop + 0.3) {
       spawnSplash(f.x + f.width / 2, 8);
       spawnBubbles(f.x + f.width / 2, f.y + 1, 4);
@@ -276,6 +322,20 @@ class AquariumEngine {
       tx = food.x > f.x + f.width / 2 ? food.x - f.width : food.x;
       ty = max(food.y, _minY);
       speed = 10 + cols / 40;
+      if (food.y < waterTop) {
+        // comida no ar: espera embaixo e salta quando ela esta ao alcance
+        final reach = min(airRows - 1.0, 4.0);
+        if (reach >= 2 &&
+            food.y > waterTop - reach &&
+            (food.x - f.mouthX).abs() < 4 &&
+            f.y <= waterTop + 2.2) {
+          _launch(
+            apex: reach + 0.3,
+            vx: ((food.x - f.mouthX) * 1.5).clamp(-8.0, 8.0),
+          );
+          return;
+        }
+      }
     } else if (_curiousT > 0) {
       f.mode = FishMode.curious;
       _curiousT -= dt;
@@ -299,7 +359,9 @@ class AquariumEngine {
         if (_wanderT <= 0) {
           _wanderT = 2.5 + _rnd.nextDouble() * 3.5;
           final range = min(cols, 70).toDouble();
-          _tx = (f.x + (_rnd.nextDouble() - 0.5) * 2 * range).clamp(0, max(1, cols - f.width)).toDouble();
+          _tx = (f.x + (_rnd.nextDouble() - 0.5) * 2 * range)
+              .clamp(0, max(1, cols - f.width))
+              .toDouble();
           _ty = _minY + _rnd.nextDouble() * (_maxY - _minY);
         }
         tx = _tx;
@@ -310,7 +372,9 @@ class AquariumEngine {
 
     final dx = tx - f.x;
     final dy = ty - f.y;
-    final d = sqrt(dx * dx + dy * dy * 4); // linhas sao ~2x mais altas que colunas
+    final d = sqrt(
+      dx * dx + dy * dy * 4,
+    ); // linhas sao ~2x mais altas que colunas
     var dvx = 0.0, dvy = 0.0;
     if (d > 0.3) {
       final s = f.mode == FishMode.wandering ? speed * min(1.0, d / 3) : speed;
@@ -352,10 +416,14 @@ class AquariumEngine {
       spawnBubbles(f.mouthX, f.y, 1 + _rnd.nextInt(2));
     }
 
-    // Comer.
+    _tryEat();
+  }
+
+  void _tryEat() {
+    final f = fish;
     for (final p in List<Particle>.of(particles)) {
       if (p.type != ParticleType.food) continue;
-      if ((p.x - f.mouthX).abs() < 1.6 && (p.y - f.y).abs() < 1.3) {
+      if ((p.x - f.mouthX).abs() < 1.8 && (p.y - f.y).abs() < 1.4) {
         particles.remove(p);
         onEat?.call(p);
         spawnBubbles(f.mouthX, f.y, p.bright ? 6 : 2, bright: p.bright);
@@ -381,7 +449,7 @@ class AquariumEngine {
             }
           } else {
             if (p.y < waterTop) {
-              p.vy = min(9.0, p.vy + 12 * dt); // no ar: queda livre
+              p.vy = min(4.5, p.vy + 6 * dt); // no ar: queda livre (visivel)
               p.x = p.x0;
             } else {
               p.vy += (2.2 - p.vy) * min(1.0, 3 * dt); // na agua: arrasto
@@ -398,7 +466,8 @@ class AquariumEngine {
           p.vy += 14 * dt;
           p.x += p.vx * dt;
           p.y += p.vy * dt;
-          if ((p.vy > 0 && p.y >= waterTop + 0.6) || p.age > 1.5) particles.remove(p);
+          if ((p.vy > 0 && p.y >= waterTop + 0.6) || p.age > 1.5)
+            particles.remove(p);
         case ParticleType.dirt:
           break;
       }
@@ -430,7 +499,9 @@ class AquariumEngine {
         c.y = rows - 2.0;
         if (c.timer <= 0) {
           c.timer = 1.5 + _rnd.nextDouble() * 4;
-          c.tx = _rnd.nextBool() ? _rnd.nextDouble() * (cols - 4) : c.x; // às vezes pausa
+          c.tx = _rnd.nextBool()
+              ? _rnd.nextDouble() * (cols - 4)
+              : c.x; // às vezes pausa
         }
         final dx = c.tx - c.x;
         if (dx.abs() > 0.2) {

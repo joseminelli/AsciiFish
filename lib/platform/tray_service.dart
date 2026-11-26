@@ -26,16 +26,28 @@ class TrayService with TrayListener {
   Future<void> _rebuild() async {
     final s = game.settings;
     _lastState = '${s.alwaysOnTop}|${s.widgetMode}';
-    await trayManager.setContextMenu(Menu(items: [
-      MenuItem(key: 'show', label: 'Mostrar / trazer para frente'),
-      MenuItem(key: 'hide', label: 'Esconder'),
-      MenuItem.separator(),
-      MenuItem.checkbox(key: 'widget', label: 'Modo widget (sob os apps)', checked: s.widgetMode),
-      MenuItem.checkbox(key: 'top', label: 'Sempre no topo', checked: s.alwaysOnTop),
-      MenuItem(key: 'snap', label: 'Reencaixar na barra de tarefas'),
-      MenuItem.separator(),
-      MenuItem(key: 'quit', label: 'Sair'),
-    ]));
+    await trayManager.setContextMenu(
+      Menu(
+        items: [
+          MenuItem(key: 'show', label: 'Mostrar / trazer para frente'),
+          MenuItem(key: 'hide', label: 'Esconder'),
+          MenuItem.separator(),
+          MenuItem.checkbox(
+            key: 'widget',
+            label: 'Modo widget (sob os apps)',
+            checked: s.widgetMode,
+          ),
+          MenuItem.checkbox(
+            key: 'top',
+            label: 'Sempre no topo',
+            checked: s.alwaysOnTop,
+          ),
+          MenuItem(key: 'snap', label: 'Reencaixar na barra de tarefas'),
+          MenuItem.separator(),
+          MenuItem(key: 'quit', label: 'Sair'),
+        ],
+      ),
+    );
   }
 
   @override

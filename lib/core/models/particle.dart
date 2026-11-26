@@ -2,8 +2,14 @@ enum ParticleType { bubble, food, dirt, splash }
 
 /// Bolhas, flocos de comida e sujeira. Coordenadas em células (colunas/linhas), contínuas.
 class Particle {
-  Particle(this.type, this.x, this.y, this.ch, {this.tag = '', this.bright = false})
-      : x0 = x;
+  Particle(
+    this.type,
+    this.x,
+    this.y,
+    this.ch, {
+    this.tag = '',
+    this.bright = false,
+  }) : x0 = x;
 
   final ParticleType type;
   double x;

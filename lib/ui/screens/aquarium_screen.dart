@@ -63,6 +63,10 @@ class _AquariumScreenState extends State<AquariumScreen>
       g.clean();
       return KeyEventResult.handled;
     }
+    if (k == LogicalKeyboardKey.escape && g.feedArmed) {
+      g.cancelFeed();
+      return KeyEventResult.handled;
+    }
     if (k == LogicalKeyboardKey.escape && g.menuOpen) {
       g.setMenu(false);
       return KeyEventResult.handled;
@@ -87,13 +91,18 @@ class _AquariumScreenState extends State<AquariumScreen>
                   child: LayoutBuilder(
                     builder: (context, c) {
                       g.onLayout(c.biggest);
-                      return GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTapDown: (d) => g.tapAt(d.localPosition),
-                        child: RepaintBoundary(
-                          child: CustomPaint(
-                            size: Size.infinite,
-                            painter: AquariumPainter(g, _frame),
+                      return MouseRegion(
+                        cursor: g.feedArmed
+                            ? SystemMouseCursors.precise
+                            : MouseCursor.defer,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTapDown: (d) => g.tapAt(d.localPosition),
+                          child: RepaintBoundary(
+                            child: CustomPaint(
+                              size: Size.infinite,
+                              painter: AquariumPainter(g, _frame),
+                            ),
                           ),
                         ),
                       );

@@ -14,10 +14,10 @@ class GameProgress {
     this.cleanCount = 0,
     this.interactCount = 0,
     DateTime? lastSavedAt,
-  })  : owned = owned ?? {'theme_oled', 'food_basic'},
-        achievements = achievements ?? {},
-        daysCared = daysCared ?? {},
-        lastSavedAt = lastSavedAt ?? DateTime.now();
+  }) : owned = owned ?? {'theme_oled', 'food_basic'},
+       achievements = achievements ?? {},
+       daysCared = daysCared ?? {},
+       lastSavedAt = lastSavedAt ?? DateTime.now();
 
   int level;
   int xp;
@@ -37,24 +37,25 @@ class GameProgress {
   int get xpToNextLevel => 40 + level * 20;
 
   Map<String, dynamic> toJson() => {
-        'level': level,
-        'xp': xp,
-        'pearls': pearls,
-        'hunger': hunger,
-        'happiness': happiness,
-        'cleanliness': cleanliness,
-        'owned': owned.toList(),
-        'achievements': achievements.toList(),
-        'daysCared': daysCared.toList(),
-        'foodId': foodId,
-        'feedCount': feedCount,
-        'cleanCount': cleanCount,
-        'interactCount': interactCount,
-        'lastSavedAt': lastSavedAt.toIso8601String(),
-      };
+    'level': level,
+    'xp': xp,
+    'pearls': pearls,
+    'hunger': hunger,
+    'happiness': happiness,
+    'cleanliness': cleanliness,
+    'owned': owned.toList(),
+    'achievements': achievements.toList(),
+    'daysCared': daysCared.toList(),
+    'foodId': foodId,
+    'feedCount': feedCount,
+    'cleanCount': cleanCount,
+    'interactCount': interactCount,
+    'lastSavedAt': lastSavedAt.toIso8601String(),
+  };
 
   factory GameProgress.fromJson(Map<String, dynamic> j) {
-    Set<String> set(String k) => ((j[k] as List?) ?? const []).cast<String>().toSet();
+    Set<String> set(String k) =>
+        ((j[k] as List?) ?? const []).cast<String>().toSet();
     final d = GameProgress();
     return GameProgress(
       level: j['level'] as int? ?? d.level,
@@ -70,7 +71,9 @@ class GameProgress {
       feedCount: j['feedCount'] as int? ?? 0,
       cleanCount: j['cleanCount'] as int? ?? 0,
       interactCount: j['interactCount'] as int? ?? 0,
-      lastSavedAt: DateTime.tryParse(j['lastSavedAt'] as String? ?? '') ?? DateTime.now(),
+      lastSavedAt:
+          DateTime.tryParse(j['lastSavedAt'] as String? ?? '') ??
+          DateTime.now(),
     );
   }
 }

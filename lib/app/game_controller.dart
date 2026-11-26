@@ -48,6 +48,11 @@ class GameController extends ChangeNotifier {
   final Random _rnd = Random();
 
   bool hudHover = false;
+
+  /// Posição do cursor dentro da janela (null se fora). Atualizada pelo click-through.
+  Offset? cursorLocal;
+  double _armedUntil = -1;
+  bool get feedArmed => _clock < _armedUntil;
   bool menuOpen = false;
   bool focused = true;
 
@@ -88,7 +93,10 @@ class GameController extends ChangeNotifier {
     engine.fish.width = FishSprites.widthFor(progress.level);
     engine.setPlantStyle(o.contains('decor_plants') ? 1 : 0);
     engine.oxygen = o.contains('decor_oxygen');
-    engine.setCompanions(fishCompanion: o.contains('comp_fish'), shrimp: o.contains('comp_shrimp'));
+    engine.setCompanions(
+      fishCompanion: o.contains('comp_fish'),
+      shrimp: o.contains('comp_shrimp'),
+    );
   }
 
   // ---------------------------------------------------------------- loop
@@ -112,7 +120,9 @@ class GameController extends ChangeNotifier {
     final cols = (size.width / glyphs.cell.width).floor();
     final rows = (size.height / glyphs.cell.height).floor();
     final water = (kWaterPx / glyphs.cell.height).ceil();
-    if (cols != engine.cols || rows != engine.rows || water != engine.waterRows) {
+    if (cols != engine.cols ||
+        rows != engine.rows ||
+        water != engine.waterRows) {
       engine.waterRows = water;
       engine.resize(cols, rows);
     }
@@ -122,7 +132,26 @@ class GameController extends ChangeNotifier {
 
   /// Solta comida (botão, tecla F/Espaço ou clique na água). Também é o ponto de entrada
   /// para eventos externos (futuro NFC/serial): basta chamar `triggerFeed()`.
-  void triggerFeed() => feed();
+  void triggerFeed() {
+    final c = cursorLocal;
+    if (c != null && !overPanel(c)) {
+      feed(x: c.dx / glyphs.cell.width); // atalho: solta no X do mouse
+    } else {
+      armFeed();
+    }
+  }
+
+  /// Botão Alimentar: o próximo clique em qualquer lugar da faixa solta a comida naquele X.
+  void armFeed() {
+    _armedUntil = _clock + 6;
+    showToast('Clique onde soltar a comida');
+    notifyListeners();
+  }
+
+  void cancelFeed() {
+    _armedUntil = -1;
+    notifyListeners();
+  }
 
   void feed({double? x}) {
     if (_clock - _lastFeed < 0.5 || engine.foodCount >= 10) return;
@@ -147,6 +176,12 @@ class GameController extends ChangeNotifier {
   void tapAt(Offset px) {
     final cx = px.dx / glyphs.cell.width;
     final cy = px.dy / glyphs.cell.height;
+    if (feedArmed && !overPanel(px)) {
+      _armedUntil = -1;
+      feed(x: cx);
+      notifyListeners();
+      return;
+    }
     if (engine.cleanAt(cx, cy)) {
       prog.onCleanOne();
       scheduleSave();
@@ -173,26 +208,46 @@ class GameController extends ChangeNotifier {
 
   // ------------------------------------------------- regiões interativas
 
-  Rect dockRect(Size win) =>
-      Rect.fromLTWH(kPanelMargin, win.height - kPanelMargin - kDockSize.height, kDockSize.width, kDockSize.height);
+  Rect dockRect(Size win) => Rect.fromLTWH(
+    kPanelMargin,
+    win.height - kPanelMargin - kDockSize.height,
+    kDockSize.width,
+    kDockSize.height,
+  );
 
-  Rect menuRect(Size win) => Rect.fromLTWH(kPanelMargin,
-      win.height - kPanelMargin - kDockSize.height - 6 - kMenuSize.height, kMenuSize.width, kMenuSize.height);
+  Rect menuRect(Size win) => Rect.fromLTWH(
+    kPanelMargin,
+    win.height - kPanelMargin - kDockSize.height - 6 - kMenuSize.height,
+    kMenuSize.width,
+    kMenuSize.height,
+  );
 
   bool overPanel(Offset p) {
     final win = window.size;
-    return dockRect(win).inflate(4).contains(p) || (menuOpen && menuRect(win).inflate(4).contains(p));
+    return dockRect(win).inflate(4).contains(p) ||
+        (menuOpen && menuRect(win).inflate(4).contains(p));
   }
 
   /// Onde o mouse deve ser capturado (o resto é click-through).
   bool isInteractiveAt(Offset p) {
-    if (overPanel(p)) return true;
+    if (overPanel(p) || feedArmed) return true;
     final cw = glyphs.cell.width, ch = glyphs.cell.height;
     final f = engine.fish;
-    if (Rect.fromLTWH(f.x * cw - 6, f.y * ch - 4, f.width * cw + 12, ch + 8).contains(p)) return true;
+    if (Rect.fromLTWH(
+      f.x * cw - 6,
+      f.y * ch - 4,
+      f.width * cw + 12,
+      ch + 8,
+    ).contains(p))
+      return true;
     for (final d in engine.particles) {
       if (d.type == ParticleType.dirt &&
-          Rect.fromLTWH(d.x * cw - 5, d.y * ch - 5, cw + 10, ch + 10).contains(p)) {
+          Rect.fromLTWH(
+            d.x * cw - 5,
+            d.y * ch - 5,
+            cw + 10,
+            ch + 10,
+          ).contains(p)) {
         return true;
       }
     }
@@ -209,10 +264,10 @@ class GameController extends ChangeNotifier {
   bool owns(ShopItem i) => progress.owned.contains(i.id);
 
   bool isEquipped(ShopItem i) => switch (i.category) {
-        ShopCategory.theme => settings.themeId == i.id,
-        ShopCategory.food => progress.foodId == i.id,
-        _ => owns(i),
-      };
+    ShopCategory.theme => settings.themeId == i.id,
+    ShopCategory.food => progress.foodId == i.id,
+    _ => owns(i),
+  };
 
   void buy(ShopItem i) {
     if (owns(i)) return;
@@ -269,7 +324,11 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> snapToCorner() => window.dock(height: menuOpen ? max(settings.windowHeight ?? 200, kMenuWindowHeight) : null);
+  Future<void> snapToCorner() => window.dock(
+    height: menuOpen
+        ? max(settings.windowHeight ?? 200, kMenuWindowHeight)
+        : null,
+  );
 
   void setHover(bool v) {
     if (hudHover == v) return;
@@ -279,7 +338,9 @@ class GameController extends ChangeNotifier {
 
   void setMenu(bool v) {
     menuOpen = v;
-    window.dock(height: v ? max(settings.windowHeight ?? 200, kMenuWindowHeight) : null);
+    window.dock(
+      height: v ? max(settings.windowHeight ?? 200, kMenuWindowHeight) : null,
+    );
     notifyListeners();
   }
 

@@ -8,18 +8,55 @@ class FishStage {
 }
 
 const kStages = [
-  FishStage('Alevino', 1, '<o))' '{T}'),
-  FishStage('Peixe Jovem', 3, '<o))))' '{T}'),
-  FishStage('Peixe Adulto', 6, '<°)))))' '{T}'),
-  FishStage('Peixe-anjo', 10, '<{°)))))}' '{T}'),
-  FishStage('Tubarão', 15, '<=°))))))))))' '{T}'),
-  FishStage('Dragão Marinho', 20, '<§°)))~)))~)))' '{T}'),
+  FishStage(
+    'Alevino',
+    1,
+    '<o))'
+        '{T}',
+  ),
+  FishStage(
+    'Peixe Jovem',
+    3,
+    '<o))))'
+        '{T}',
+  ),
+  FishStage(
+    'Peixe Adulto',
+    6,
+    '<°)))))'
+        '{T}',
+  ),
+  FishStage(
+    'Peixe-anjo',
+    10,
+    '<{°)))))}'
+        '{T}',
+  ),
+  FishStage(
+    'Tubarão',
+    15,
+    '<=°))))))))))'
+        '{T}',
+  ),
+  FishStage(
+    'Dragão Marinho',
+    20,
+    '<§°)))~)))~)))'
+        '{T}',
+  ),
 ];
 
 const _tailFrames = ['><', '>-'];
 
 const _mirrorMap = {
-  '<': '>', '>': '<', '(': ')', ')': '(', '/': r'\', r'\': '/', '{': '}', '}': '{',
+  '<': '>',
+  '>': '<',
+  '(': ')',
+  ')': '(',
+  '/': r'\',
+  r'\': '/',
+  '{': '}',
+  '}': '{',
 };
 
 String mirrorSprite(String s) =>
@@ -34,10 +71,16 @@ class FishSprites {
     return s;
   }
 
-  static String frame(int level, {required bool facingRight, required int tail}) {
-    final left = stageFor(level).body.replaceFirst('{T}', _tailFrames[tail % _tailFrames.length]);
+  static String frame(
+    int level, {
+    required bool facingRight,
+    required int tail,
+  }) {
+    final left = stageFor(level).body
+        .replaceFirst('{T}', _tailFrames[tail % _tailFrames.length]);
     return facingRight ? mirrorSprite(left) : left;
   }
 
-  static int widthFor(int level) => frame(level, facingRight: false, tail: 0).length;
+  static int widthFor(int level) =>
+      frame(level, facingRight: false, tail: 0).length;
 }

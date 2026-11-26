@@ -6,17 +6,24 @@ import 'package:ffi/ffi.dart';
 /// ou seja, abaixo de todos os apps e acima do papel de parede. Clicar no desktop não a esconde.
 class DesktopLayer {
   static final DynamicLibrary _user32 = DynamicLibrary.open('user32.dll');
-  static final int Function(Pointer<Utf16>, Pointer<Utf16>) _findWindow = _user32
-      .lookupFunction<IntPtr Function(Pointer<Utf16>, Pointer<Utf16>), int Function(Pointer<Utf16>, Pointer<Utf16>)>(
-          'FindWindowW');
-  static final int Function(int, int, int, int, int, int, int) _setWindowPos = _user32.lookupFunction<
-      Int32 Function(IntPtr, IntPtr, Int32, Int32, Int32, Int32, Uint32),
-      int Function(int, int, int, int, int, int, int)>('SetWindowPos');
+  static final int Function(Pointer<Utf16>, Pointer<Utf16>) _findWindow =
+      _user32.lookupFunction<
+        IntPtr Function(Pointer<Utf16>, Pointer<Utf16>),
+        int Function(Pointer<Utf16>, Pointer<Utf16>)
+      >('FindWindowW');
+  static final int Function(int, int, int, int, int, int, int) _setWindowPos =
+      _user32.lookupFunction<
+        Int32 Function(IntPtr, IntPtr, Int32, Int32, Int32, Int32, Uint32),
+        int Function(int, int, int, int, int, int, int)
+      >('SetWindowPos');
 
-  static final int Function(int, int) _getWindow =
-      _user32.lookupFunction<IntPtr Function(IntPtr, Uint32), int Function(int, int)>('GetWindow');
+  static final int Function(int, int) _getWindow = _user32
+      .lookupFunction<IntPtr Function(IntPtr, Uint32), int Function(int, int)>(
+        'GetWindow',
+      );
 
-  static const _swpFlags = 0x0001 | 0x0002 | 0x0010; // NOSIZE | NOMOVE | NOACTIVATE
+  static const _swpFlags =
+      0x0001 | 0x0002 | 0x0010; // NOSIZE | NOMOVE | NOACTIVATE
 
   static int _find(String className) {
     final name = className.toNativeUtf16();

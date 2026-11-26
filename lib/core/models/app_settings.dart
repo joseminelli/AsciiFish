@@ -22,16 +22,16 @@ class AppSettings {
   double? windowHeight;
 
   Map<String, dynamic> toJson() => {
-        'alwaysOnTop': alwaysOnTop,
-        'widgetMode': widgetMode,
-        'themeId': themeId,
-        'autoHideHud': autoHideHud,
-        'fontSize': fontSize,
-        'windowX': windowX,
-        'windowY': windowY,
-        'windowWidth': windowWidth,
-        'windowHeight': windowHeight,
-      };
+    'alwaysOnTop': alwaysOnTop,
+    'widgetMode': widgetMode,
+    'themeId': themeId,
+    'autoHideHud': autoHideHud,
+    'fontSize': fontSize,
+    'windowX': windowX,
+    'windowY': windowY,
+    'windowWidth': windowWidth,
+    'windowHeight': windowHeight,
+  };
 
   factory AppSettings.fromJson(Map<String, dynamic> j) {
     final d = AppSettings();
@@ -40,7 +40,10 @@ class AppSettings {
       widgetMode: j['widgetMode'] as bool? ?? d.widgetMode,
       themeId: j['themeId'] as String? ?? d.themeId,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,
-      fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(10.0, 20.0),
+      fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(
+        10.0,
+        20.0,
+      ),
       windowX: (j['windowX'] as num?)?.toDouble(),
       windowY: (j['windowY'] as num?)?.toDouble(),
       windowWidth: (j['windowWidth'] as num?)?.toDouble() ?? d.windowWidth,

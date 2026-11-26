@@ -22,8 +22,12 @@ class SaveRepository {
       if (await f.exists()) {
         final j = jsonDecode(await f.readAsString()) as Map<String, dynamic>;
         return (
-          settings: AppSettings.fromJson((j['settings'] as Map?)?.cast<String, dynamic>() ?? {}),
-          progress: GameProgress.fromJson((j['progress'] as Map?)?.cast<String, dynamic>() ?? {}),
+          settings: AppSettings.fromJson(
+            (j['settings'] as Map?)?.cast<String, dynamic>() ?? {},
+          ),
+          progress: GameProgress.fromJson(
+            (j['progress'] as Map?)?.cast<String, dynamic>() ?? {},
+          ),
         );
       }
     } catch (_) {
@@ -36,11 +40,13 @@ class SaveRepository {
     try {
       final f = await _file();
       final tmp = File('${f.path}.tmp');
-      await tmp.writeAsString(jsonEncode({
-        'version': 1,
-        'settings': settings.toJson(),
-        'progress': progress.toJson(),
-      }));
+      await tmp.writeAsString(
+        jsonEncode({
+          'version': 1,
+          'settings': settings.toJson(),
+          'progress': progress.toJson(),
+        }),
+      );
       await tmp.rename(f.path);
     } catch (_) {
       // falha de disco não deve derrubar o jogo

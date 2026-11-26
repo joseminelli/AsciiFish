@@ -14,12 +14,13 @@ class HudOverlay extends StatelessWidget {
   Widget build(BuildContext context) {
     final p = game.progress;
     final th = game.theme;
-    final visible = game.hudHover || !game.settings.autoHideHud || game.menuOpen;
+    final visible =
+        game.hudHover || !game.settings.autoHideHud || game.menuOpen;
     final warn = p.hunger < 30
         ? ' · fome!'
         : p.cleanliness < 30
-            ? ' · sujo!'
-            : '';
+        ? ' · sujo!'
+        : '';
     final mono = TextStyle(fontFamily: kMonoFamily, fontSize: 11, color: th.fg);
 
     return Stack(
@@ -39,15 +40,24 @@ class HudOverlay extends StatelessWidget {
                   child: AnimatedOpacity(
                     opacity: visible ? 0 : 0.85,
                     duration: const Duration(milliseconds: 180),
-                    child: Text('Nv.${p.level}$warn',
-                        style: mono.copyWith(color: warn.isEmpty ? th.fg.withValues(alpha: 0.7) : th.accent)),
+                    child: Text(
+                      'Nv.${p.level}$warn',
+                      style: mono.copyWith(
+                        color: warn.isEmpty
+                            ? th.fg.withValues(alpha: 0.7)
+                            : th.accent,
+                      ),
+                    ),
                   ),
                 ),
               ),
               AnimatedOpacity(
                 opacity: visible ? 1 : 0,
                 duration: const Duration(milliseconds: 180),
-                child: IgnorePointer(ignoring: !visible, child: _dock(p, th, mono)),
+                child: IgnorePointer(
+                  ignoring: !visible,
+                  child: _dock(p, th, mono),
+                ),
               ),
             ],
           ),
@@ -72,24 +82,48 @@ class HudOverlay extends StatelessWidget {
             children: [
               Text(_bar('Fome', p.hunger, 100), style: mono),
               Text(_bar('Humor', p.happiness, 100), style: mono),
-              Text(_bar('XP', p.xp.toDouble(), p.xpToNextLevel.toDouble()), style: mono),
+              Text(
+                _bar('XP', p.xp.toDouble(), p.xpToNextLevel.toDouble()),
+                style: mono,
+              ),
             ],
           ),
           const Spacer(),
           Row(
             children: [
-              _Btn('[Alimentar]', 'Alimentar (F / Espaço)', th.accent, game.triggerFeed),
+              _Btn(
+                '[Alimentar]',
+                'Clique depois onde soltar a comida (atalho F: solta no mouse)',
+                th.accent,
+                game.armFeed,
+              ),
               const SizedBox(width: 4),
               _Btn('[Limpar]', 'Limpar o aquário (C)', th.accent, game.clean),
               const Spacer(),
               Text('● ${p.pearls}', style: mono.copyWith(color: th.food)),
               const SizedBox(width: 4),
-              _Icon(game.settings.alwaysOnTop ? Icons.push_pin : Icons.push_pin_outlined,
-                  game.settings.alwaysOnTop ? 'Sempre no topo: ligado' : 'Sempre no topo: desligado',
-                  game.settings.alwaysOnTop ? th.accent : th.fg,
-                  () => game.setAlwaysOnTop(!game.settings.alwaysOnTop)),
-              _Icon(Icons.settings, 'Menu', th.fg, () => game.setMenu(!game.menuOpen)),
-              _Icon(Icons.close, 'Esconder na bandeja', th.fg, game.window.hideToTray),
+              _Icon(
+                game.settings.alwaysOnTop
+                    ? Icons.push_pin
+                    : Icons.push_pin_outlined,
+                game.settings.alwaysOnTop
+                    ? 'Sempre no topo: ligado'
+                    : 'Sempre no topo: desligado',
+                game.settings.alwaysOnTop ? th.accent : th.fg,
+                () => game.setAlwaysOnTop(!game.settings.alwaysOnTop),
+              ),
+              _Icon(
+                Icons.settings,
+                'Menu',
+                th.fg,
+                () => game.setMenu(!game.menuOpen),
+              ),
+              _Icon(
+                Icons.close,
+                'Esconder na bandeja',
+                th.fg,
+                game.window.hideToTray,
+              ),
             ],
           ),
         ],
@@ -112,16 +146,19 @@ class _Btn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: tip,
-        waitDuration: const Duration(milliseconds: 600),
-        child: InkWell(
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
-            child: Text(label, style: TextStyle(fontFamily: kMonoFamily, fontSize: 12, color: color)),
-          ),
+    message: tip,
+    waitDuration: const Duration(milliseconds: 600),
+    child: InkWell(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
+        child: Text(
+          label,
+          style: TextStyle(fontFamily: kMonoFamily, fontSize: 12, color: color),
         ),
-      );
+      ),
+    ),
+  );
 }
 
 class _Icon extends StatelessWidget {
@@ -133,12 +170,16 @@ class _Icon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Tooltip(
-        message: tip,
-        waitDuration: const Duration(milliseconds: 500),
-        child: InkResponse(
-          onTap: onTap,
-          radius: 12,
-          child: SizedBox(width: 22, height: 24, child: Icon(icon, size: 14, color: color)),
-        ),
-      );
+    message: tip,
+    waitDuration: const Duration(milliseconds: 500),
+    child: InkResponse(
+      onTap: onTap,
+      radius: 12,
+      child: SizedBox(
+        width: 22,
+        height: 24,
+        child: Icon(icon, size: 14, color: color),
+      ),
+    ),
+  );
 }

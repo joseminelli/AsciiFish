@@ -36,7 +36,10 @@ class WindowsWindowService with WindowListener {
     _s = s;
     await windowManager.ensureInitialized();
     final area = await _workArea();
-    final h = (s.windowHeight ?? defaultHeight).clamp(minHeight, area.height * 0.8);
+    final h = (s.windowHeight ?? defaultHeight).clamp(
+      minHeight,
+      area.height * 0.8,
+    );
     origin = Offset(area.left, area.bottom - h);
     size = Size(area.width, h);
 
@@ -67,7 +70,10 @@ class WindowsWindowService with WindowListener {
   /// Encaixa a faixa na base da área útil, com a altura pedida (ou a salva).
   Future<void> dock({double? height}) async {
     final area = await _workArea();
-    final h = (height ?? _s?.windowHeight ?? defaultHeight).clamp(minHeight, area.height * 0.9);
+    final h = (height ?? _s?.windowHeight ?? defaultHeight).clamp(
+      minHeight,
+      area.height * 0.9,
+    );
     origin = Offset(area.left, area.bottom - h);
     size = Size(area.width, h);
     await windowManager.setBounds(null, position: origin, size: size);
@@ -89,17 +95,22 @@ class WindowsWindowService with WindowListener {
     _layerTimer ??= Timer.periodic(const Duration(milliseconds: 300), (_) {
       final s = _s;
       if (s == null || hidden || s.alwaysOnTop || !s.widgetMode) {
-        if (_peeking && s != null && !s.alwaysOnTop) windowManager.setAlwaysOnTop(false);
+        if (_peeking && s != null && !s.alwaysOnTop)
+          windowManager.setAlwaysOnTop(false);
         _peeking = false;
         return;
       }
       final raised = DesktopLayer.desktopRaised();
       if (raised && !_peeking) {
         _peeking = true;
-        windowManager.setAlwaysOnTop(true); // o Progman fica topmost durante o Win+D
+        windowManager.setAlwaysOnTop(
+          true,
+        ); // o Progman fica topmost durante o Win+D
       } else if (!raised && _peeking) {
         _peeking = false;
-        windowManager.setAlwaysOnTop(false).then((_) => DesktopLayer.sendAboveDesktop());
+        windowManager
+            .setAlwaysOnTop(false)
+            .then((_) => DesktopLayer.sendAboveDesktop());
       }
     });
   }
@@ -114,7 +125,8 @@ class WindowsWindowService with WindowListener {
     await applyZOrder();
   }
 
-  Future<void> setIgnoreMouse(bool ignore) => windowManager.setIgnoreMouseEvents(ignore);
+  Future<void> setIgnoreMouse(bool ignore) =>
+      windowManager.setIgnoreMouseEvents(ignore);
 
   Future<void> hideToTray() async {
     hidden = true;
@@ -139,7 +151,8 @@ class WindowsWindowService with WindowListener {
   void onWindowBlur() {
     onFocusChanged?.call(false);
     final s = _s;
-    if (s != null && !hidden) applyZOrder(); // ao perder o foco volta para a camada de desktop
+    if (s != null && !hidden)
+      applyZOrder(); // ao perder o foco volta para a camada de desktop
   }
 
   @override
