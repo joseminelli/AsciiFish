@@ -172,10 +172,8 @@ class WindowsWindowService with WindowListener {
 
   @override
   void onWindowBlur() {
+    // Não afunda a janela ao perder o foco: ir à taskbar e voltar não pode fazê-la sumir.
     onFocusChanged?.call(false);
-    final s = _s;
-    if (s != null && !hidden)
-      applyZOrder(); // ao perder o foco volta para a camada de desktop
   }
 
   @override
