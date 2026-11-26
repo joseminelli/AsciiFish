@@ -63,10 +63,6 @@ class _AquariumScreenState extends State<AquariumScreen>
       g.clean();
       return KeyEventResult.handled;
     }
-    if (k == LogicalKeyboardKey.escape && g.feedArmed) {
-      g.cancelFeed();
-      return KeyEventResult.handled;
-    }
     if (k == LogicalKeyboardKey.escape && g.menuOpen) {
       g.setMenu(false);
       return KeyEventResult.handled;
@@ -92,7 +88,7 @@ class _AquariumScreenState extends State<AquariumScreen>
                     builder: (context, c) {
                       g.onLayout(c.biggest);
                       return MouseRegion(
-                        cursor: g.feedArmed
+                        cursor: g.ctrlHeld
                             ? SystemMouseCursors.precise
                             : MouseCursor.defer,
                         child: GestureDetector(

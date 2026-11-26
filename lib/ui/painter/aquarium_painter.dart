@@ -162,7 +162,13 @@ class AquariumPainter extends CustomPainter {
         ParticleType.dirt => th.dirt,
         ParticleType.splash => th.accent,
       };
-      text(p.ch, p.x, p.y, c);
+      if (p.type == ParticleType.food) {
+        final o = Offset(p.x * cw + cw / 2, p.y * ch + ch / 2);
+        canvas.drawCircle(o, 6, Paint()..color = c.withValues(alpha: 0.25));
+        canvas.drawCircle(o, 3, Paint()..color = c);
+      } else {
+        text(p.ch, p.x, p.y, c);
+      }
     }
 
     // Companheiros.
@@ -186,7 +192,7 @@ class AquariumPainter extends CustomPainter {
 
     // Mira de alimentação: linha tracejada no X do mouse.
     final cur = game.cursorLocal;
-    if (game.feedArmed && cur != null) {
+    if (game.ctrlHeld && cur != null) {
       final cx = cur.dx / cw;
       for (var r = 0; r < e.waterTop; r++) {
         text(

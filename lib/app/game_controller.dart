@@ -51,8 +51,14 @@ class GameController extends ChangeNotifier {
 
   /// Posição do cursor dentro da janela (null se fora). Atualizada pelo click-through.
   Offset? cursorLocal;
-  double _armedUntil = -1;
-  bool get feedArmed => _clock < _armedUntil;
+
+  /// Cursor relativo à janela, mesmo fora dela (o X vale para a faixa inteira).
+  Offset? cursorAny;
+
+  /// Ctrl pressionado: a faixa inteira captura o mouse e o clique solta comida.
+  bool ctrlHeld = false;
+  double _lastHint = -999;
+  int _hints = 0;
   bool menuOpen = false;
   bool focused = true;
 
@@ -133,23 +139,23 @@ class GameController extends ChangeNotifier {
   /// Solta comida (botão, tecla F/Espaço ou clique na água). Também é o ponto de entrada
   /// para eventos externos (futuro NFC/serial): basta chamar `triggerFeed()`.
   void triggerFeed() {
-    final c = cursorLocal;
-    if (c != null && !overPanel(c)) {
+    final c = cursorAny;
+    if (c != null && c.dx >= 0 && c.dx <= window.size.width && !overPanel(c)) {
       feed(x: c.dx / glyphs.cell.width); // atalho: solta no X do mouse
     } else {
-      armFeed();
+      feedNearFish();
     }
   }
 
-  /// Botão Alimentar: o próximo clique em qualquer lugar da faixa solta a comida naquele X.
-  void armFeed() {
-    _armedUntil = _clock + 6;
-    showToast('Clique onde soltar a comida');
-    notifyListeners();
+  /// Botão Alimentar: um clique, a comida cai perto do peixe.
+  void feedNearFish() {
+    final f = engine.fish;
+    feed(x: f.x + f.width / 2 + (_rnd.nextDouble() - 0.5) * 8);
   }
 
-  void cancelFeed() {
-    _armedUntil = -1;
+  void setCtrl(bool v) {
+    if (ctrlHeld == v) return;
+    ctrlHeld = v;
     notifyListeners();
   }
 
@@ -176,12 +182,6 @@ class GameController extends ChangeNotifier {
   void tapAt(Offset px) {
     final cx = px.dx / glyphs.cell.width;
     final cy = px.dy / glyphs.cell.height;
-    if (feedArmed && !overPanel(px)) {
-      _armedUntil = -1;
-      feed(x: cx);
-      notifyListeners();
-      return;
-    }
     if (engine.cleanAt(cx, cy)) {
       prog.onCleanOne();
       scheduleSave();
@@ -195,14 +195,26 @@ class GameController extends ChangeNotifier {
         prog.onInteract();
         scheduleSave();
       }
+      return;
     }
+    if (ctrlHeld)
+      feed(x: cx); // Ctrl+clique na água solta comida no X do clique
   }
 
   /// Cursor sobre a água (mesmo em click-through): o peixe vem olhar.
   void passiveHover(Offset local) {
     final cw = glyphs.cell.width, ch = glyphs.cell.height;
-    if (local.dy >= engine.waterTop * ch && !overPanel(local)) {
+    if (!overPanel(local)) {
       engine.attract(local.dx / cw, local.dy / ch);
+      // dica discreta (poucas vezes por sessão) ao passar sobre a água sem Ctrl
+      if (local.dy >= engine.waterTop * ch &&
+          !ctrlHeld &&
+          _hints < 3 &&
+          _clock - _lastHint > 90) {
+        _lastHint = _clock;
+        _hints++;
+        showToast('Ctrl+clique na água para alimentar');
+      }
     }
   }
 
@@ -230,7 +242,7 @@ class GameController extends ChangeNotifier {
 
   /// Onde o mouse deve ser capturado (o resto é click-through).
   bool isInteractiveAt(Offset p) {
-    if (overPanel(p) || feedArmed) return true;
+    if (overPanel(p) || ctrlHeld) return true;
     final cw = glyphs.cell.width, ch = glyphs.cell.height;
     final f = engine.fish;
     if (Rect.fromLTWH(

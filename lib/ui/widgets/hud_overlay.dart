@@ -93,9 +93,9 @@ class HudOverlay extends StatelessWidget {
             children: [
               _Btn(
                 '[Alimentar]',
-                'Clique depois onde soltar a comida (atalho F: solta no mouse)',
+                'Solta comida perto do peixe (Ctrl+clique na água: onde quiser)',
                 th.accent,
-                game.armFeed,
+                game.feedNearFish,
               ),
               const SizedBox(width: 4),
               _Btn('[Limpar]', 'Limpar o aquário (C)', th.accent, game.clean),

@@ -5,6 +5,7 @@ import 'dart:ui';
 import 'package:screen_retriever/legacy.dart';
 
 import '../app/game_controller.dart';
+import 'desktop_layer.dart';
 
 /// Faz o fundo transparente deixar os cliques passarem para o desktop.
 /// Consulta o cursor ~20x/s: só captura o mouse sobre o peixe, sujeira e painéis.
@@ -14,6 +15,7 @@ class ClickThroughService {
   Timer? _timer;
   bool _busy = false;
   bool? _capturing;
+  bool _hotkeyWas = false;
 
   void start() =>
       _timer = Timer.periodic(const Duration(milliseconds: 50), (_) => _poll());
@@ -30,6 +32,11 @@ class ClickThroughService {
       final inWindow = (Offset.zero & win.size).contains(local);
 
       game.cursorLocal = inWindow ? local : null;
+      game.cursorAny = local;
+      game.setCtrl(inWindow && DesktopLayer.ctrlDown());
+      final hot = DesktopLayer.feedHotkeyDown();
+      if (hot && !_hotkeyWas) game.triggerFeed();
+      _hotkeyWas = hot;
       game.setHover(inWindow && game.overPanel(local));
       if (inWindow) game.passiveHover(local);
 

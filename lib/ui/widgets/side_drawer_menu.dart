@@ -233,7 +233,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
       const SizedBox(height: 8),
       Text('Atalhos', style: base.copyWith(color: th.accent)),
       Text(
-        'F / Espaço  alimentar\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
+        'Ctrl+clique alimentar onde clicar (na água)\nCtrl+Alt+F  alimentar no X do mouse (global)\nF / Espaço  idem (com a janela em foco)\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
         style: base.copyWith(fontSize: 11),
       ),
     ];

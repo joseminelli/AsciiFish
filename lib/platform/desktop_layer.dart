@@ -22,6 +22,19 @@ class DesktopLayer {
         'GetWindow',
       );
 
+  static final int Function(int) _keyState = _user32
+      .lookupFunction<Int16 Function(Int32), int Function(int)>(
+        'GetAsyncKeyState',
+      );
+
+  static bool _down(int vk) => (_keyState(vk) & 0x8000) != 0;
+
+  static bool ctrlDown() =>
+      _down(0x11) && !_down(0x12); // Ctrl sem Alt (AltGr = Ctrl+Alt)
+
+  /// Atalho global Ctrl+Alt+F (funciona mesmo sem foco, por causa do click-through).
+  static bool feedHotkeyDown() => _down(0x11) && _down(0x12) && _down(0x46);
+
   static const _swpFlags =
       0x0001 | 0x0002 | 0x0010; // NOSIZE | NOMOVE | NOACTIVATE
 
