@@ -155,6 +155,71 @@ def make_banner(w=1280, h=400):
     return img.convert("RGB")
 
 
+def make_promo(w=1920, h=1080):
+    """Imagem de divulgação: título, aquário ASCII com os bichos do jogo e a logo."""
+    img = gradient((w, h), top=(8, 38, 50), bot=(3, 14, 20)).convert("RGBA")
+    d = ImageDraw.Draw(img)
+    rnd = random.Random(21)
+    cell = 30                       # tamanho da fonte do aquário
+    fm = font(cell)
+    fj = ImageFont.truetype("C:/Windows/Fonts/msgothic.ttc", cell)
+    cw = d.textlength("M", font=fm)
+    lh = int(cell * 1.25)
+
+    def big(col, row, text, color, size=54):
+        f = font(size)
+        d.text((col * cw, row * lh - (size - cell) // 2), text, font=f, fill=color)
+
+    def put(col, row, text, color, f=None):
+        x = col * cw
+        for ch in text:
+            ff = f or (fj if ord(ch) > 0x2E80 else fm)
+            d.text((x, row * lh), ch, font=ff, fill=color)
+            x += cw * (2 if ord(ch) > 0x2E80 else 1)
+
+    cols, rows = int(w / cw), int(h / lh)
+    top_row = 11                      # onde começa a água
+    # bolhas espalhadas na água
+    for _ in range(28):
+        put(rnd.randint(0, cols - 2), rnd.randint(top_row + 2, rows - 4), rnd.choice("o°.O"), BUBBLE)
+    # superfície ondulada
+    surface = "".join("~" if (i // 3) % 2 == 0 else "-" for i in range(cols))
+    put(0, top_row, surface, ACCENT)
+    # fundo: areia, plantas e sujeira
+    for c in range(cols):
+        put(c, rows - 2, rnd.choice("_.,:"), (107, 91, 69))
+    for c in range(3, cols - 3, 7):
+        if 18 <= c <= 40 or 55 <= c <= 62:
+            continue
+        for r in range(rnd.randint(2, 7)):
+            put(c + (r % 2), rows - 3 - r, "(" if r % 2 == 0 else ")", PLANT)
+    # bichos
+    big(6, 16, "<{°)))))}><", FISH, 64)
+    big(36, 20, "<o)><", (255, 130, 130), 44)
+    big(44, 14, "<=°))))))))><", (233, 254, 255), 56)
+    put(20, rows - 3, r"(\/) (°,,°) (\/)", (230, 110, 90))
+    put(44, 19, "<コ:彡", (200, 160, 255))
+    put(58, rows - 3, "<o)>-", ACCENT)
+    # comida caindo
+    for c, r in [(30, 14), (31, 16), (29, 18)]:
+        put(c, r, "*", (232, 210, 138))
+    # dock do app
+    put(2, rows - 1, "[Alimentar] [Limpar] [Loja] [Status]", FG)
+    # escurece o topo para o texto
+    shade = Image.new("RGBA", (w, 12 * lh), (0, 0, 0, 0))
+    sd = ImageDraw.Draw(shade)
+    for y in range(12 * lh):
+        sd.line([(0, y), (w, y)], fill=(4, 18, 26, int(255 * (1 - y / (12 * lh)))))
+    img.paste(shade, (0, 0), shade)
+    d = ImageDraw.Draw(img)
+    # título + tagline + logo
+    d.text((110, 80), "ASCII Fish Pet", font=font(120), fill=(233, 254, 255))
+    d.text((116, 235), "Um aquário que vive no seu desktop do Windows.", font=font(38, FONT_REG), fill=ACCENT)
+    d.text((116, 290), "Alimente, limpe e veja seu peixe evoluir de alevino a dragão marinho.", font=font(26, FONT_REG), fill=FG)
+    paste_logo(img, 340, right=w - 90, y=70)
+    return img.convert("RGB")
+
+
 def main():
     ASSETS.mkdir(parents=True, exist_ok=True)
     DOCS.mkdir(exist_ok=True)
@@ -167,6 +232,7 @@ def main():
         make_wizard_large(sc).save(ASSETS / f"wizard-large{suf}.bmp")
     make_wizard_small().save(ASSETS / "wizard-small.bmp")
     make_banner().save(DOCS / "banner.png")
+    make_promo().save(DOCS / "promo.png")
     for dest in [ROOT / "windows/runner/resources/app_icon.ico", ROOT / "assets/app_icon.ico"]:
         shutil.copy(ico, dest)
     print("ok")

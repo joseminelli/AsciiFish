@@ -8,7 +8,7 @@
 - [ ] **Banners**
   - [x] Banner do README/GitHub (aquário ASCII + nome + Whiskline Studio)
   - [x] Banner lateral (164×314) e cabeçalho (55×55) do instalador
-  - [ ] Imagem de divulgação / captura de tela para a página de download
+  - [x] Imagem de divulgação (`docs/promo.png`, 1920×1080, gerada por `tools/gen_identity.py`; ainda dá para trocar por uma captura real do app)
 - [x] Guardar os arquivos-fonte em `installer/assets/` (e uma pasta `docs/` para o banner do README)
 
 ## 1. Instalador (Inno Setup)
