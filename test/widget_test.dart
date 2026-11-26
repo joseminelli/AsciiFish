@@ -52,6 +52,23 @@ void main() {
     expect(comeu, greaterThanOrEqualTo(10)); // e a comida é comida
   });
 
+  test('clique perto do peixe faz ele saltar na direção do ponto', () {
+    final e = AquariumEngine(seed: 9)
+      ..waterRows = 6
+      ..resize(80, 18);
+    for (var i = 0; i < 120; i++) {
+      e.update(1 / 60);
+    }
+    expect(e.jumpToward(e.fish.x + 4, y: 3), isTrue);
+    expect(e.jumpToward(e.fish.x, y: 3), isFalse); // já está no ar
+    var noAr = false;
+    for (var i = 0; i < 90; i++) {
+      e.update(1 / 60);
+      if (e.fish.y < e.waterTop) noAr = true;
+    }
+    expect(noAr, isTrue);
+  });
+
   test('catálogo: ids únicos e cada cor de peixe tem definição', () {
     final ids = kShopItems.map((i) => i.id).toList();
     expect(ids.toSet().length, ids.length);

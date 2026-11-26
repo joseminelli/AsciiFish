@@ -29,6 +29,8 @@ class DesktopLayer {
 
   static bool _down(int vk) => (_keyState(vk) & 0x8000) != 0;
 
+  static bool leftButtonDown() => _down(0x01);
+
   static bool ctrlDown() =>
       _down(0x11) && !_down(0x12); // Ctrl sem Alt (AltGr = Ctrl+Alt)
 

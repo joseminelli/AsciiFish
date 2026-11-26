@@ -165,6 +165,25 @@ class AquariumEngine {
     }
   }
 
+  /// Pulo em direção a um ponto (clique do usuário). [x] em colunas, [y] em linhas (opcional).
+  /// Retorna false se não deu para pular (já no ar, ou sem espaço de ar).
+  bool jumpToward(double x, {double? y}) {
+    if (fish.mode == FishMode.jumping || airRows < 2) return false;
+    final depth = max(
+      0.0,
+      fish.y - waterTop,
+    ); // o peixe precisa subir até a superfície primeiro
+    final wanted = (y != null && y < waterTop)
+        ? (waterTop - y + 0.5)
+        : (airRows - 1.0);
+    final above = wanted.clamp(1.2, airRows - 1.0).toDouble();
+    _launch(
+      apex: above + depth,
+      vx: ((x - fish.mouthX) * 1.5).clamp(-8.0, 8.0),
+    );
+    return true;
+  }
+
   /// Debug: força um pulo agora (se houver ar suficiente).
   void forceJump() {
     if (fish.mode != FishMode.jumping && airRows >= 2) _launch();

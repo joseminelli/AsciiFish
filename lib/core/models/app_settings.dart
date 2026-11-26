@@ -5,6 +5,7 @@ class AppSettings {
     this.themeId = 'theme_oled',
     this.fishColorId = 'fcolor_default',
     this.debugMode = false,
+    this.fishReacts = true,
     this.autoHideHud = true,
     this.fontSize = 13,
     this.windowX,
@@ -18,6 +19,7 @@ class AppSettings {
   String themeId;
   String fishColorId;
   bool debugMode;
+  bool fishReacts; // peixe segue o mouse e pula quando clicam perto dele
   bool autoHideHud;
   double fontSize;
   double? windowX;
@@ -31,6 +33,7 @@ class AppSettings {
     'themeId': themeId,
     'fishColorId': fishColorId,
     'debugMode': debugMode,
+    'fishReacts': fishReacts,
     'autoHideHud': autoHideHud,
     'fontSize': fontSize,
     'windowX': windowX,
@@ -47,6 +50,7 @@ class AppSettings {
       themeId: j['themeId'] as String? ?? d.themeId,
       fishColorId: j['fishColorId'] as String? ?? d.fishColorId,
       debugMode: j['debugMode'] as bool? ?? d.debugMode,
+      fishReacts: j['fishReacts'] as bool? ?? d.fishReacts,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,
       fontSize: ((j['fontSize'] as num?) ?? d.fontSize).toDouble().clamp(
         10.0,

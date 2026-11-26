@@ -214,6 +214,21 @@ class GameController extends ChangeNotifier {
   }
 
   Offset? _lastCursor;
+  double _lastClickJump = -10;
+
+  /// Clique (em qualquer lugar da tela) com o X perto do X do peixe: ele salta na direção do clique.
+  void globalClick(Offset local, {required bool inWindow}) {
+    if (!settings.fishReacts) return;
+    if (inWindow && overPanel(local)) return;
+    if (local.dx < 0 || local.dx > window.size.width) return;
+    if (_clock - _lastClickJump < 1.2) return;
+    final cw = glyphs.cell.width, ch = glyphs.cell.height;
+    final cx = local.dx / cw;
+    final f = engine.fish;
+    if ((cx - (f.x + f.width / 2)).abs() <= f.width / 2 + 5) {
+      if (engine.jumpToward(cx, y: local.dy / ch)) _lastClickJump = _clock;
+    }
+  }
 
   /// Mouse em qualquer lugar da área de trabalho: enquanto ele se move, o peixe vem olhar (só o X
   /// importa; ele continua na água). Parado há ~3 s, o peixe volta a nadar sozinho.
@@ -223,7 +238,9 @@ class GameController extends ChangeNotifier {
     _lastCursor = local;
     if (local.dx < 0 || local.dx > window.size.width) return; // outro monitor
     if (inWindow && overPanel(local)) return;
-    if (moved) engine.attract(local.dx / cw, local.dy / ch);
+    if (moved && inWindow && settings.fishReacts) {
+      engine.attract(local.dx / cw, local.dy / ch);
+    }
     // dica discreta (poucas vezes por sessão) ao passar sobre a água sem Ctrl
     if (inWindow &&
         local.dy >= engine.waterTop * ch &&
@@ -413,6 +430,12 @@ class GameController extends ChangeNotifier {
     showToast('Progresso resetado');
     notifyListeners();
     scheduleSave();
+  }
+
+  void setFishReacts(bool v) {
+    settings.fishReacts = v;
+    scheduleSave();
+    notifyListeners();
   }
 
   void setAutoHideHud(bool v) {

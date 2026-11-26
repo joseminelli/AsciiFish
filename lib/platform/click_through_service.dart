@@ -16,6 +16,7 @@ class ClickThroughService {
   bool _busy = false;
   bool? _capturing;
   bool _hotkeyWas = false;
+  bool _lmbWas = false;
 
   void start() =>
       _timer = Timer.periodic(const Duration(milliseconds: 50), (_) => _poll());
@@ -37,6 +38,9 @@ class ClickThroughService {
       final hot = DesktopLayer.feedHotkeyDown();
       if (hot && !_hotkeyWas) game.triggerFeed();
       _hotkeyWas = hot;
+      final lmb = DesktopLayer.leftButtonDown();
+      if (lmb && !_lmbWas) game.globalClick(local, inWindow: inWindow);
+      _lmbWas = lmb;
       game.setHover(inWindow && game.overPanel(local));
       game.passiveHover(local, inWindow: inWindow);
 

@@ -287,6 +287,11 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         g.setWidgetMode,
       ),
       sw('Sempre no topo', s.alwaysOnTop, g.setAlwaysOnTop),
+      sw(
+        'Peixe reage ao mouse (seguir / pular no clique)',
+        s.fishReacts,
+        g.setFishReacts,
+      ),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
       const SizedBox(height: 4),
       Text('Tamanho da fonte: ${s.fontSize.round()}'),
