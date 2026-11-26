@@ -1,4 +1,4 @@
-enum ParticleType { bubble, food, dirt }
+enum ParticleType { bubble, food, dirt, splash }
 
 /// Bolhas, flocos de comida e sujeira. Coordenadas em células (colunas/linhas), contínuas.
 class Particle {
@@ -9,6 +9,7 @@ class Particle {
   double x;
   double y;
   double x0; // âncora horizontal para a deriva senoidal
+  double vx = 0;
   double vy = 0;
   double phase = 0;
   double age = 0;

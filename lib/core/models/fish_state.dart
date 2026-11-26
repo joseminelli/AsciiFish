@@ -1,4 +1,4 @@
-enum FishMode { wandering, seekingFood, curious }
+enum FishMode { wandering, seekingFood, curious, jumping }
 
 class FishState {
   double x = 5;

@@ -16,7 +16,8 @@ class AsciiFishApp extends StatelessWidget {
       brightness: brightness,
       fontFamily: kMonoFamily,
       fontFamilyFallback: kMonoFallback,
-      scaffoldBackgroundColor: t.bg,
+      scaffoldBackgroundColor: Colors.transparent,
+      canvasColor: t.bg,
       colorScheme: ColorScheme.fromSeed(
         seedColor: t.accent,
         brightness: brightness,
@@ -37,7 +38,7 @@ class AsciiFishApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'ASCII Fish Pet',
           theme: buildTheme(t),
-          home: Scaffold(backgroundColor: t.bg, body: AquariumScreen(game: game)),
+          home: Scaffold(backgroundColor: Colors.transparent, body: AquariumScreen(game: game)),
         );
       },
     );

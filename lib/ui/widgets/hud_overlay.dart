@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../app/game_controller.dart';
+import '../../core/models/ascii_theme.dart';
+import '../../core/models/game_progress.dart';
 import '../painter/aquarium_painter.dart';
-import 'top_drag_bar.dart';
 
-/// Barra discreta: aparece no hover (ou sempre, se "esconder HUD" estiver desligado).
+/// Dock de controles no canto inferior esquerdo. Fica esmaecido até o mouse chegar perto.
 class HudOverlay extends StatelessWidget {
   const HudOverlay(this.game, {super.key});
   final GameController game;
-
-  Widget _fade(bool visible, Widget child) => AnimatedOpacity(
-        opacity: visible ? 1 : 0,
-        duration: const Duration(milliseconds: 180),
-        child: IgnorePointer(ignoring: !visible, child: child),
-      );
 
   @override
   Widget build(BuildContext context) {
@@ -25,57 +20,76 @@ class HudOverlay extends StatelessWidget {
         : p.cleanliness < 30
             ? ' · sujo!'
             : '';
+    final mono = TextStyle(fontFamily: kMonoFamily, fontSize: 11, color: th.fg);
 
     return Stack(
       children: [
-        Positioned(top: 0, left: 0, right: 0, child: _fade(visible, TopDragBar(game))),
-        Positioned(bottom: 0, left: 0, right: 0, child: _fade(visible, _bottom(game))),
         Positioned(
-          left: 6,
-          bottom: 3,
-          child: IgnorePointer(
-            child: AnimatedOpacity(
-              opacity: visible ? 0 : 0.8,
-              duration: const Duration(milliseconds: 180),
-              child: Text('Nv.${p.level}$warn',
-                  style: TextStyle(
-                      fontFamily: kMonoFamily,
-                      fontSize: 11,
-                      color: warn.isEmpty ? th.fg.withValues(alpha: 0.6) : th.accent)),
-            ),
+          left: kPanelMargin,
+          bottom: kPanelMargin,
+          width: kDockSize.width,
+          height: kDockSize.height,
+          child: Stack(
+            children: [
+              // Estado recolhido: só um rótulo discreto.
+              Positioned(
+                left: 6,
+                bottom: 4,
+                child: IgnorePointer(
+                  child: AnimatedOpacity(
+                    opacity: visible ? 0 : 0.85,
+                    duration: const Duration(milliseconds: 180),
+                    child: Text('Nv.${p.level}$warn',
+                        style: mono.copyWith(color: warn.isEmpty ? th.fg.withValues(alpha: 0.7) : th.accent)),
+                  ),
+                ),
+              ),
+              AnimatedOpacity(
+                opacity: visible ? 1 : 0,
+                duration: const Duration(milliseconds: 180),
+                child: IgnorePointer(ignoring: !visible, child: _dock(p, th, mono)),
+              ),
+            ],
           ),
         ),
       ],
     );
   }
 
-  Widget _bottom(GameController g) {
-    final p = g.progress;
-    final th = g.theme;
-    final style = TextStyle(fontFamily: kMonoFamily, fontSize: 11, color: th.fg);
+  Widget _dock(GameProgress p, AsciiTheme th, TextStyle mono) {
     return Container(
-      color: th.bg.withValues(alpha: 0.78),
-      padding: const EdgeInsets.fromLTRB(8, 4, 8, 4),
+      padding: const EdgeInsets.fromLTRB(8, 5, 6, 4),
+      decoration: BoxDecoration(
+        color: th.bg.withValues(alpha: 0.85),
+        border: Border.all(color: th.fg.withValues(alpha: 0.25)),
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Wrap(
-            spacing: 10,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(_bar('Fome', p.hunger, 100), style: style),
-              Text(_bar('Humor', p.happiness, 100), style: style),
-              Text(_bar('XP', p.xp.toDouble(), p.xpToNextLevel.toDouble()), style: style),
+              Text(_bar('Fome', p.hunger, 100), style: mono),
+              Text(_bar('Humor', p.happiness, 100), style: mono),
+              Text(_bar('XP', p.xp.toDouble(), p.xpToNextLevel.toDouble()), style: mono),
             ],
           ),
-          const SizedBox(height: 2),
+          const Spacer(),
           Row(
             children: [
-              _Btn('[ Alimentar ]', 'Alimentar (F / Espaço)', th.accent, g.triggerFeed),
-              const SizedBox(width: 8),
-              _Btn('[ Limpar ]', 'Limpar o aquário (C)', th.accent, g.clean),
+              _Btn('[Alimentar]', 'Alimentar (F / Espaço)', th.accent, game.triggerFeed),
+              const SizedBox(width: 4),
+              _Btn('[Limpar]', 'Limpar o aquário (C)', th.accent, game.clean),
               const Spacer(),
-              Text('● ${p.pearls}', style: style.copyWith(color: th.food)),
+              Text('● ${p.pearls}', style: mono.copyWith(color: th.food)),
+              const SizedBox(width: 4),
+              _Icon(game.settings.alwaysOnTop ? Icons.push_pin : Icons.push_pin_outlined,
+                  game.settings.alwaysOnTop ? 'Sempre no topo: ligado' : 'Sempre no topo: desligado',
+                  game.settings.alwaysOnTop ? th.accent : th.fg,
+                  () => game.setAlwaysOnTop(!game.settings.alwaysOnTop)),
+              _Icon(Icons.settings, 'Menu', th.fg, () => game.setMenu(!game.menuOpen)),
+              _Icon(Icons.close, 'Esconder na bandeja', th.fg, game.window.hideToTray),
             ],
           ),
         ],
@@ -83,7 +97,7 @@ class HudOverlay extends StatelessWidget {
     );
   }
 
-  static String _bar(String label, double v, double max, {int w = 6}) {
+  static String _bar(String label, double v, double max, {int w = 4}) {
     final n = (v / max * w).round().clamp(0, w);
     return '$label[${'#' * n}${'.' * (w - n)}]';
   }
@@ -106,6 +120,25 @@ class _Btn extends StatelessWidget {
             padding: const EdgeInsets.symmetric(vertical: 3, horizontal: 2),
             child: Text(label, style: TextStyle(fontFamily: kMonoFamily, fontSize: 12, color: color)),
           ),
+        ),
+      );
+}
+
+class _Icon extends StatelessWidget {
+  const _Icon(this.icon, this.tip, this.color, this.onTap);
+  final IconData icon;
+  final String tip;
+  final Color color;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Tooltip(
+        message: tip,
+        waitDuration: const Duration(milliseconds: 500),
+        child: InkResponse(
+          onTap: onTap,
+          radius: 12,
+          child: SizedBox(width: 22, height: 24, child: Icon(icon, size: 14, color: color)),
         ),
       );
 }

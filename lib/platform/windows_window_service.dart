@@ -7,33 +7,43 @@ import 'package:window_manager/legacy.dart';
 
 import '../core/models/app_settings.dart';
 
-/// Abstração sobre window_manager: posição, pin (sempre no topo), resize e persistência.
+/// Janela transparente em faixa, encaixada na base da área útil da tela (logo acima da taskbar).
 class WindowsWindowService with WindowListener {
-  static const defaultSize = Size(340, 240);
-  static const minSize = Size(260, 180);
-  static const maxSize = Size(900, 700);
-  static const _margin = 12.0;
+  static const minHeight = 120.0;
+  static const defaultHeight = 200.0;
 
   AppSettings? _s;
   VoidCallback? onGeometryChanged;
   Future<void> Function()? onCloseRequested;
   ValueChanged<bool>? onFocusChanged;
 
+  /// Posição/tamanho atuais em pixels lógicos (usados pelo click-through).
+  Offset origin = Offset.zero;
+  Size size = const Size(1200, defaultHeight);
+  bool hidden = false;
+  bool quitting = false;
+
+  Future<Rect> _workArea() async {
+    final d = await screenRetriever.getPrimaryDisplay();
+    final p = d.visiblePosition ?? Offset.zero;
+    final sz = d.visibleSize ?? d.size;
+    return p & sz;
+  }
+
   Future<void> init(AppSettings s) async {
     _s = s;
     await windowManager.ensureInitialized();
-    final size = Size(
-      (s.windowWidth ?? defaultSize.width).clamp(minSize.width, maxSize.width),
-      (s.windowHeight ?? defaultSize.height).clamp(minSize.height, maxSize.height),
-    );
-    final pos = await _initialPosition(s, size);
+    final area = await _workArea();
+    final h = (s.windowHeight ?? defaultHeight).clamp(minHeight, area.height * 0.8);
+    origin = Offset(area.left, area.bottom - h);
+    size = Size(area.width, h);
 
     final options = WindowOptions(
       size: size,
-      minimumSize: minSize,
-      maximumSize: maxSize,
+      minimumSize: const Size(400, minHeight),
       titleBarStyle: TitleBarStyle.hidden,
       windowButtonVisibility: false,
+      backgroundColor: const Color(0x00000000),
       skipTaskbar: true, // só aparece na bandeja (ícones ocultos)
       alwaysOnTop: s.alwaysOnTop,
       title: 'ASCII Fish Pet',
@@ -41,66 +51,41 @@ class WindowsWindowService with WindowListener {
     await windowManager.setPreventClose(true);
     windowManager.addListener(this);
     await windowManager.waitUntilReadyToShow(options, () async {
-      await windowManager.setPosition(pos);
+      await windowManager.setBackgroundColor(const Color(0x00000000));
+      try {
+        await windowManager.setHasShadow(false);
+      } catch (_) {}
+      await dock();
       await windowManager.show();
       await applyZOrder();
-      if (s.widgetMode && !s.alwaysOnTop) await _sendBackOnce();
     });
   }
 
-  Future<Offset> _initialPosition(AppSettings s, Size size) async {
-    if (s.windowX != null && s.windowY != null) {
-      final saved = Offset(s.windowX!, s.windowY!);
-      final displays = await screenRetriever.getAllDisplays();
-      final onScreen = displays.any((d) {
-        final p = d.visiblePosition ?? Offset.zero;
-        final sz = d.visibleSize ?? d.size;
-        return Rect.fromLTWH(p.dx, p.dy, sz.width, sz.height).contains(saved + const Offset(20, 20));
-      });
-      if (onScreen) return saved;
-    }
-    return _corner(size);
+  /// Encaixa a faixa na base da área útil, com a altura pedida (ou a salva).
+  Future<void> dock({double? height}) async {
+    final area = await _workArea();
+    final h = (height ?? _s?.windowHeight ?? defaultHeight).clamp(minHeight, area.height * 0.9);
+    origin = Offset(area.left, area.bottom - h);
+    size = Size(area.width, h);
+    await windowManager.setBounds(null, position: origin, size: size);
   }
 
-  Future<Offset> _corner(Size size) async {
-    final d = await screenRetriever.getPrimaryDisplay();
-    final p = d.visiblePosition ?? Offset.zero;
-    final sz = d.visibleSize ?? d.size;
-    return Offset(p.dx + sz.width - size.width - _margin, p.dy + sz.height - size.height - _margin);
-  }
-
-  bool quitting = false;
-
-  /// Pin = sempre no topo. Caso contrário é uma janela normal: apps abertos por cima a cobrem
-  /// e ela fica visível sobre a área de trabalho (clicar no desktop não a esconde).
-  Future<void> applyZOrder() async {
-    final s = _s!;
-    await windowManager.setAlwaysOnTop(s.alwaysOnTop);
-  }
-
-  /// Modo widget: ao iniciar, vai para trás dos apps abertos (uma única vez, sem ficar "grudada").
-  Future<void> _sendBackOnce() async {
-    await windowManager.setAlwaysOnBottom(true);
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-    await windowManager.setAlwaysOnBottom(false);
-  }
+  Future<void> applyZOrder() => windowManager.setAlwaysOnTop(_s!.alwaysOnTop);
 
   Future<void> setAlwaysOnTop(bool v) async {
     _s!.alwaysOnTop = v;
     await applyZOrder();
   }
 
-  Future<void> setWidgetMode(bool v) async {
-    _s!.widgetMode = v;
-    if (v && !_s!.alwaysOnTop) await _sendBackOnce();
+  Future<void> setIgnoreMouse(bool ignore) => windowManager.setIgnoreMouseEvents(ignore);
+
+  Future<void> hideToTray() async {
+    hidden = true;
+    await windowManager.hide();
   }
 
-  Future<bool> get isVisible => windowManager.isVisible();
-
-  Future<void> hideToTray() => windowManager.hide();
-
-  /// Traz a janela para frente (menu da bandeja). No modo widget ela volta ao fundo ao perder o foco.
   Future<void> showRaised() async {
+    hidden = false;
     await windowManager.show();
     await windowManager.focus();
   }
@@ -110,42 +95,16 @@ class WindowsWindowService with WindowListener {
     await windowManager.close();
   }
 
-  Future<void> snapToCorner() async {
-    final size = await windowManager.getSize();
-    await windowManager.setPosition(await _corner(size));
-    await _store();
-  }
-
-  Future<void> _store() async {
-    final s = _s;
-    if (s == null) return;
-    final p = await windowManager.getPosition();
-    final sz = await windowManager.getSize();
-    s.windowX = p.dx;
-    s.windowY = p.dy;
-    s.windowWidth = sz.width;
-    s.windowHeight = sz.height;
-    onGeometryChanged?.call();
-  }
-
-  @override
-  void onWindowMoved() => _store();
-
-  @override
-  void onWindowResized() => _store();
-
   @override
   void onWindowFocus() => onFocusChanged?.call(true);
 
   @override
-  void onWindowBlur() {
-    onFocusChanged?.call(false);
-  }
+  void onWindowBlur() => onFocusChanged?.call(false);
 
   @override
   Future<void> onWindowClose() async {
     if (!quitting) {
-      await hideToTray(); // fechar = esconder na bandeja; "Sair" fica no menu do ícone
+      await hideToTray();
       return;
     }
     await onCloseRequested?.call();

@@ -12,6 +12,12 @@ class AquariumEngine {
   final Random _rnd;
   int cols = 40;
   int rows = 14;
+
+  /// Profundidade da água em linhas (ancorada na base). Acima dela é ar (transparente).
+  int waterRows = 6;
+  int get _wr => waterRows.clamp(4, max(4, rows - 1));
+  int get waterTop => max(0, rows - _wr);
+  int get airRows => waterTop;
   double time = 0;
 
   final FishState fish = FishState();
@@ -28,6 +34,11 @@ class AquariumEngine {
   /// Chamado quando o peixe come um floco.
   void Function(Particle food)? onEat;
 
+  /// Chamado quando o peixe pula para fora da agua.
+  void Function()? onJump;
+  static const _g = 16.0; // gravidade do pulo (linhas/s^2)
+  double _jumpT = 25;
+
   double _bubbleT = 1;
   double _dirtT = 3;
   double _wanderT = 0;
@@ -41,15 +52,28 @@ class AquariumEngine {
   int get dirtCount => particles.where((p) => p.type == ParticleType.dirt).length;
   int get foodCount => particles.where((p) => p.type == ParticleType.food).length;
 
-  double get _minY => 1;
+  double get _minY => waterTop + 1.0;
   double get _maxY => max(_minY, rows - 3.0);
 
-  void resize(int c, int r) {
-    cols = max(c, 20);
-    rows = max(r, 8);
+  void resize(int newCols, int newRows) {
+    final nr = max(newRows, 8);
+    final d = nr - rows; // tudo e ancorado na base: desloca junto com a altura
+    cols = max(newCols, 20);
+    rows = nr;
+    if (d != 0) {
+      fish.y += d;
+      for (final p in particles) {
+        p.y += d;
+      }
+      for (final c in companions) {
+        c.y += d;
+      }
+    }
     _buildPlants();
     fish.x = fish.x.clamp(0, max(0, cols - fish.width)).toDouble();
-    fish.y = fish.y.clamp(_minY, _maxY).toDouble();
+    fish.y = fish.mode == FishMode.jumping
+        ? fish.y.clamp(0, _maxY).toDouble()
+        : fish.y.clamp(_minY, _maxY).toDouble();
     for (final p in particles) {
       p.x0 = p.x0.clamp(0, cols - 1).toDouble();
       if (p.type == ParticleType.dirt || p.settled) p.y = rows - 2.0;
@@ -76,7 +100,7 @@ class AquariumEngine {
     plants.clear();
     final r = Random(7);
     final n = (cols / (plantStyle == 1 ? 7 : 11)).round().clamp(2, 14);
-    final maxH = max(2, (rows * (plantStyle == 1 ? 0.55 : 0.4)).floor());
+    final maxH = max(2, (_wr * (plantStyle == 1 ? 0.55 : 0.4)).floor());
     for (var i = 0; i < n; i++) {
       plants.add(Plant(
         x: (i + 0.5) * cols / n + (r.nextDouble() - 0.5) * 2,
@@ -93,7 +117,7 @@ class AquariumEngine {
   void dropFood(double x, String tag, {int count = 3, bool bright = false}) {
     for (var i = 0; i < count; i++) {
       final fx = (x + (_rnd.nextDouble() - 0.5) * 3).clamp(0, cols - 1).toDouble();
-      final p = Particle(ParticleType.food, fx, 0.5 - i * 0.7, const ['*', '•', '.'][_rnd.nextInt(3)],
+      final p = Particle(ParticleType.food, fx, max(0.0, waterTop - 3.0) - i * 0.7, const ['*', '•', '.'][_rnd.nextInt(3)],
           tag: tag, bright: bright)
         ..phase = _rnd.nextDouble() * pi * 2
         ..vy = 0.5;
@@ -145,6 +169,15 @@ class AquariumEngine {
     }
   }
 
+  void spawnSplash(double x, int n) {
+    for (var i = 0; i < n; i++) {
+      particles.add(Particle(ParticleType.splash, x + (_rnd.nextDouble() - 0.5) * 2, waterTop + 0.3,
+          const ['.', '°', "'", ','][_rnd.nextInt(4)])
+        ..vx = (_rnd.nextDouble() - 0.5) * 8
+        ..vy = -(3 + _rnd.nextDouble() * 6));
+    }
+  }
+
   // ----------------------------------------------------------- simulação
 
   void update(double dt) {
@@ -187,8 +220,52 @@ class AquariumEngine {
     return best;
   }
 
+  void _launch() {
+    final f = fish;
+    final apex = min(1.5 + _rnd.nextDouble() * max(0.5, airRows - 2.8), airRows - 1.0);
+    f.vy = -sqrt(2 * _g * apex);
+    f.vx = f.facing * (3 + _rnd.nextDouble() * 5);
+    f.mode = FishMode.jumping;
+    _jumpT = 30 + _rnd.nextDouble() * 60;
+    spawnSplash(f.x + f.width / 2, 8);
+    onJump?.call();
+  }
+
+  void _updateJump(double dt) {
+    final f = fish;
+    f.vy += _g * dt;
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    final maxX = max(0, cols - f.width).toDouble();
+    if (f.x < 0) {
+      f.x = 0;
+      f.vx = f.vx.abs();
+    } else if (f.x > maxX) {
+      f.x = maxX;
+      f.vx = -f.vx.abs();
+    }
+    if (f.vx > 0.6) f.facing = 1;
+    if (f.vx < -0.6) f.facing = -1;
+    if (f.y < 0) {
+      f.y = 0;
+      f.vy = max(0, f.vy);
+    }
+    f.tailPhase += dt * 12;
+    if (f.vy > 0 && f.y >= waterTop + 0.3) {
+      spawnSplash(f.x + f.width / 2, 8);
+      spawnBubbles(f.x + f.width / 2, f.y + 1, 4);
+      f.mode = FishMode.wandering;
+      f.vy *= 0.4;
+      _wanderT = 0;
+    }
+  }
+
   void _updateFish(double dt) {
     final f = fish;
+    if (f.mode == FishMode.jumping) {
+      _updateJump(dt);
+      return;
+    }
     final activity = 0.5 + 0.5 * (cleanliness / 100);
     final tired = hunger < 25 ? 0.6 : 1.0;
     final food = _nearestFood();
@@ -197,30 +274,43 @@ class AquariumEngine {
     if (food != null) {
       f.mode = FishMode.seekingFood;
       tx = food.x > f.x + f.width / 2 ? food.x - f.width : food.x;
-      ty = food.y;
-      speed = 10;
+      ty = max(food.y, _minY);
+      speed = 10 + cols / 40;
     } else if (_curiousT > 0) {
       f.mode = FishMode.curious;
       _curiousT -= dt;
       tx = _curiousX > f.x + f.width / 2 ? _curiousX - f.width : _curiousX;
-      ty = _curiousY;
-      speed = 6;
+      ty = _curiousY.clamp(_minY, _maxY).toDouble();
+      speed = 6 + cols / 60;
     } else {
       f.mode = FishMode.wandering;
-      _wanderT -= dt;
-      if (_wanderT <= 0) {
-        _wanderT = 2.5 + _rnd.nextDouble() * 3.5;
-        _tx = _rnd.nextDouble() * max(1, cols - f.width);
-        _ty = _minY + _rnd.nextDouble() * (_maxY - _minY);
+      _jumpT -= dt;
+      if (_jumpT <= 0 && airRows >= 3 && hunger > 30) {
+        // vai ate a superficie e salta
+        tx = f.x;
+        ty = waterTop + 1.0;
+        speed = 7;
+        if (f.y <= waterTop + 1.7) {
+          _launch();
+          return;
+        }
+      } else {
+        _wanderT -= dt;
+        if (_wanderT <= 0) {
+          _wanderT = 2.5 + _rnd.nextDouble() * 3.5;
+          final range = min(cols, 70).toDouble();
+          _tx = (f.x + (_rnd.nextDouble() - 0.5) * 2 * range).clamp(0, max(1, cols - f.width)).toDouble();
+          _ty = _minY + _rnd.nextDouble() * (_maxY - _minY);
+        }
+        tx = _tx;
+        ty = _ty;
+        speed = (3.5 + cols / 60) * activity * tired;
       }
-      tx = _tx;
-      ty = _ty;
-      speed = 3.5 * activity * tired;
     }
 
     final dx = tx - f.x;
     final dy = ty - f.y;
-    final d = sqrt(dx * dx + dy * dy * 4); // linhas são ~2x mais altas que colunas
+    final d = sqrt(dx * dx + dy * dy * 4); // linhas sao ~2x mais altas que colunas
     var dvx = 0.0, dvy = 0.0;
     if (d > 0.3) {
       final s = f.mode == FishMode.wandering ? speed * min(1.0, d / 3) : speed;
@@ -250,7 +340,7 @@ class AquariumEngine {
       f.vy = min(0, f.vy);
     }
 
-    // Inversão de direção com histerese: o peixe desacelera, passa por zero e então vira.
+    // Inversao de direcao com histerese: o peixe desacelera, passa por zero e entao vira.
     if (f.vx > 0.6 && f.facing < 0) f.facing = 1;
     if (f.vx < -0.6 && f.facing > 0) f.facing = -1;
     f.tailPhase += dt * (2 + sqrt(f.vx * f.vx + f.vy * f.vy) * 1.2);
@@ -280,7 +370,7 @@ class AquariumEngine {
         case ParticleType.bubble:
           p.y -= p.vy * dt;
           p.x = p.x0 + sin(time * 2.2 + p.phase) * 0.6;
-          if (p.y < 0.6) particles.remove(p);
+          if (p.y < waterTop + 0.6) particles.remove(p);
         case ParticleType.food:
           if (p.settled) {
             if (p.age > 7) {
@@ -290,15 +380,25 @@ class AquariumEngine {
               onRot?.call();
             }
           } else {
-            p.vy += (2.2 - p.vy) * min(1.0, 1.5 * dt);
+            if (p.y < waterTop) {
+              p.vy = min(9.0, p.vy + 12 * dt); // no ar: queda livre
+              p.x = p.x0;
+            } else {
+              p.vy += (2.2 - p.vy) * min(1.0, 3 * dt); // na agua: arrasto
+              p.x = p.x0 + sin(time * 2 + p.phase) * 0.5;
+            }
             p.y += p.vy * dt;
-            p.x = p.x0 + sin(time * 2 + p.phase) * 0.5;
             if (p.y >= rows - 2) {
               p.y = rows - 2.0;
               p.settled = true;
               p.age = 0;
             }
           }
+        case ParticleType.splash:
+          p.vy += 14 * dt;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          if ((p.vy > 0 && p.y >= waterTop + 0.6) || p.age > 1.5) particles.remove(p);
         case ParticleType.dirt:
           break;
       }

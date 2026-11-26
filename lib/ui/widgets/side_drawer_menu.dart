@@ -27,6 +27,11 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
     final base = TextStyle(fontFamily: kMonoFamily, fontSize: 12, color: th.fg);
     return Material(
       color: th.bg.withValues(alpha: 0.96),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(8),
+        side: BorderSide(color: th.fg.withValues(alpha: 0.3)),
+      ),
+      clipBehavior: Clip.antiAlias,
       child: DefaultTextStyle(
         style: base,
         child: Column(
@@ -156,7 +161,6 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           onChanged: on,
         );
     return [
-      sw('Modo widget (inicia atrás dos apps)', s.widgetMode, g.setWidgetMode),
       sw('Sempre no topo', s.alwaysOnTop, g.setAlwaysOnTop),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
       const SizedBox(height: 4),
@@ -168,17 +172,25 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         value: s.fontSize.clamp(10, 20).toDouble(),
         onChanged: g.setFontSize,
       ),
+      Text('Altura do aquário: ${(s.windowHeight ?? 200).round()} px'),
+      Slider(
+        min: 140,
+        max: 420,
+        divisions: 28,
+        value: (s.windowHeight ?? 200).clamp(140, 420).toDouble(),
+        onChanged: g.setWindowHeight,
+      ),
       Align(
         alignment: Alignment.centerLeft,
         child: TextButton(
           onPressed: g.snapToCorner,
-          child: Text('[ Reposicionar no canto inferior direito ]',
+          child: Text('[ Reencaixar na barra de tarefas ]',
               style: base.copyWith(color: th.accent, fontSize: 11)),
         ),
       ),
       const SizedBox(height: 8),
       Text('Atalhos', style: base.copyWith(color: th.accent)),
-      Text('F / Espaço  alimentar\nC            limpar\nEsc          fechar menu\nClique       soltar comida / limpar sujeira',
+      Text('F / Espaço  alimentar\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
           style: base.copyWith(fontSize: 11)),
     ];
   }

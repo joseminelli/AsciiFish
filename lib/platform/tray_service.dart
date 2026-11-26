@@ -19,20 +19,19 @@ class TrayService with TrayListener {
 
   void _maybeRebuild() {
     final s = game.settings;
-    final state = '${s.alwaysOnTop}|${s.widgetMode}';
+    final state = '${s.alwaysOnTop}';
     if (state != _lastState) _rebuild();
   }
 
   Future<void> _rebuild() async {
     final s = game.settings;
-    _lastState = '${s.alwaysOnTop}|${s.widgetMode}';
+    _lastState = '${s.alwaysOnTop}';
     await trayManager.setContextMenu(Menu(items: [
       MenuItem(key: 'show', label: 'Mostrar / trazer para frente'),
       MenuItem(key: 'hide', label: 'Esconder'),
       MenuItem.separator(),
-      MenuItem.checkbox(key: 'widget', label: 'Modo widget (inicia atrás dos apps)', checked: s.widgetMode),
       MenuItem.checkbox(key: 'top', label: 'Sempre no topo', checked: s.alwaysOnTop),
-      MenuItem(key: 'snap', label: 'Reposicionar no canto'),
+      MenuItem(key: 'snap', label: 'Reencaixar na barra de tarefas'),
       MenuItem.separator(),
       MenuItem(key: 'quit', label: 'Sair'),
     ]));
@@ -40,7 +39,7 @@ class TrayService with TrayListener {
 
   @override
   void onTrayIconMouseDown() async {
-    if (await game.window.isVisible) {
+    if (!game.window.hidden) {
       await game.window.hideToTray();
     } else {
       await game.window.showRaised();
@@ -58,8 +57,6 @@ class TrayService with TrayListener {
         game.window.showRaised();
       case 'hide':
         game.window.hideToTray();
-      case 'widget':
-        game.setWidgetMode(!s.widgetMode);
       case 'top':
         game.setAlwaysOnTop(!s.alwaysOnTop);
       case 'snap':

@@ -11,8 +11,24 @@ void main() {
     for (var i = 0; i < 6000; i++) {
       e.update(1 / 60);
       expect(e.fish.x, inInclusiveRange(0, 40));
-      expect(e.fish.y, inInclusiveRange(1, 11));
+      expect(e.fish.y, inInclusiveRange(0, 11)); // pode estar no ar durante um pulo
     }
+  });
+
+  test('peixe pula para fora da agua e volta', () {
+    final e = AquariumEngine(seed: 3)
+      ..waterRows = 6
+      ..resize(60, 16);
+    var jumps = 0;
+    e.onJump = () => jumps++;
+    var maxAir = 0.0;
+    for (var i = 0; i < 60 * 150; i++) {
+      e.update(1 / 60);
+      if (e.fish.y < e.waterTop) maxAir = maxAir < e.waterTop - e.fish.y ? e.waterTop - e.fish.y : maxAir;
+    }
+    expect(jumps, greaterThan(0));
+    expect(maxAir, greaterThan(0.5));
+    expect(e.fish.y, greaterThanOrEqualTo(e.waterTop)); // terminou na agua
   });
 
   test('peixe come a comida solta', () {

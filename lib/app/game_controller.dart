@@ -15,6 +15,13 @@ import '../core/storage/save_repository.dart';
 import '../platform/windows_window_service.dart';
 import '../ui/painter/aquarium_painter.dart';
 
+/// Geometria dos painéis flutuantes (pixels lógicos, ancorados no canto inferior esquerdo).
+const kDockSize = Size(262, 64);
+const kMenuSize = Size(360, 380);
+const kPanelMargin = 8.0;
+const kWaterPx = 90.0;
+const kMenuWindowHeight = kPanelMargin * 3 + 64 + 380 + 20;
+
 /// Liga motor, progressão, persistência e janela. A UI observa via ChangeNotifier (~2 Hz);
 /// o canvas é repintado por um notifier separado a cada frame.
 class GameController extends ChangeNotifier {
@@ -59,9 +66,11 @@ class GameController extends ChangeNotifier {
     prog.applyOffline();
     engine
       ..onEat = _onEat
+      ..onJump = (() => prog.onInteract())
       ..onRot = (() => progress.cleanliness = max(0, progress.cleanliness - 2));
     _syncEngine();
     engine.fish.x = 4;
+    engine.fish.y = engine.rows - 4.0;
     _autosave = Timer.periodic(const Duration(seconds: 15), (_) => saveNow());
     saveNow();
   }
@@ -102,7 +111,11 @@ class GameController extends ChangeNotifier {
   void onLayout(Size size) {
     final cols = (size.width / glyphs.cell.width).floor();
     final rows = (size.height / glyphs.cell.height).floor();
-    if (cols != engine.cols || rows != engine.rows) engine.resize(cols, rows);
+    final water = (kWaterPx / glyphs.cell.height).ceil();
+    if (cols != engine.cols || rows != engine.rows || water != engine.waterRows) {
+      engine.waterRows = water;
+      engine.resize(cols, rows);
+    }
   }
 
   // ---------------------------------------------------------- interação
@@ -130,27 +143,60 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Toque no aquário: limpa sujeira próxima ou solta comida.
+  /// Toque: limpa a sujeira tocada ou faz carinho no peixe.
   void tapAt(Offset px) {
     final cx = px.dx / glyphs.cell.width;
     final cy = px.dy / glyphs.cell.height;
     if (engine.cleanAt(cx, cy)) {
       prog.onCleanOne();
       scheduleSave();
-    } else {
-      feed(x: cx);
+      return;
+    }
+    final f = engine.fish;
+    if (cx >= f.x - 1 && cx <= f.x + f.width + 1 && (cy - f.y).abs() <= 1.5) {
+      engine.spawnBubbles(f.mouthX, f.y, 3);
+      if (_clock - _lastInteract > 3) {
+        _lastInteract = _clock;
+        prog.onInteract();
+        scheduleSave();
+      }
     }
   }
 
-  void hoverAt(Offset px) {
-    final cx = px.dx / glyphs.cell.width;
-    final cy = px.dy / glyphs.cell.height;
-    engine.attract(cx, cy);
-    if (_clock - _lastInteract > 6) {
-      _lastInteract = _clock;
-      prog.onInteract();
-      engine.spawnBubbles(engine.fish.mouthX, engine.fish.y, 2);
+  /// Cursor sobre a água (mesmo em click-through): o peixe vem olhar.
+  void passiveHover(Offset local) {
+    final cw = glyphs.cell.width, ch = glyphs.cell.height;
+    if (local.dy >= engine.waterTop * ch && !overPanel(local)) {
+      engine.attract(local.dx / cw, local.dy / ch);
     }
+  }
+
+  // ------------------------------------------------- regiões interativas
+
+  Rect dockRect(Size win) =>
+      Rect.fromLTWH(kPanelMargin, win.height - kPanelMargin - kDockSize.height, kDockSize.width, kDockSize.height);
+
+  Rect menuRect(Size win) => Rect.fromLTWH(kPanelMargin,
+      win.height - kPanelMargin - kDockSize.height - 6 - kMenuSize.height, kMenuSize.width, kMenuSize.height);
+
+  bool overPanel(Offset p) {
+    final win = window.size;
+    return dockRect(win).inflate(4).contains(p) || (menuOpen && menuRect(win).inflate(4).contains(p));
+  }
+
+  /// Onde o mouse deve ser capturado (o resto é click-through).
+  bool isInteractiveAt(Offset p) {
+    if (overPanel(p)) return true;
+    final cw = glyphs.cell.width, ch = glyphs.cell.height;
+    final f = engine.fish;
+    if (Rect.fromLTWH(f.x * cw - 6, f.y * ch - 4, f.width * cw + 12, ch + 8).contains(p)) return true;
+    for (final d in engine.particles) {
+      if (d.type == ParticleType.dirt &&
+          Rect.fromLTWH(d.x * cw - 5, d.y * ch - 5, cw + 10, ch + 10).contains(p)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   void _onEat(Particle p) {
@@ -204,12 +250,6 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> setWidgetMode(bool v) async {
-    await window.setWidgetMode(v);
-    scheduleSave();
-    notifyListeners();
-  }
-
   void setAutoHideHud(bool v) {
     settings.autoHideHud = v;
     scheduleSave();
@@ -223,7 +263,7 @@ class GameController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> snapToCorner() => window.snapToCorner();
+  Future<void> snapToCorner() => window.dock(height: menuOpen ? max(settings.windowHeight ?? 200, kMenuWindowHeight) : null);
 
   void setHover(bool v) {
     if (hudHover == v) return;
@@ -233,6 +273,14 @@ class GameController extends ChangeNotifier {
 
   void setMenu(bool v) {
     menuOpen = v;
+    window.dock(height: v ? max(settings.windowHeight ?? 200, kMenuWindowHeight) : null);
+    notifyListeners();
+  }
+
+  void setWindowHeight(double h) {
+    settings.windowHeight = h;
+    if (!menuOpen) window.dock();
+    scheduleSave();
     notifyListeners();
   }
 

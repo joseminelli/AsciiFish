@@ -62,15 +62,40 @@ class AquariumPainter extends CustomPainter {
       g.get(s, c).paint(canvas, Offset(col * cw, row * ch));
     }
 
-    canvas.drawRect(Offset.zero & size, Paint()..color = th.bg);
+    // Fundo totalmente transparente: so a agua e desenhada.
+    final wt = e.waterTop.toDouble();
+    final surfaceY = (wt + 0.5) * ch;
+    final waterRect = Rect.fromLTRB(0, surfaceY, size.width, size.height);
+    canvas.drawRect(
+      waterRect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [th.accent.withValues(alpha: 0.10), th.accent.withValues(alpha: 0.30)],
+        ).createShader(waterRect),
+    );
 
-    // Superfície ondulante.
-    final shift = (e.time * 3).floor();
-    final surface = StringBuffer();
-    for (var i = 0; i < e.cols; i++) {
-      surface.write((i + shift) % 4 < 2 ? '~' : '-');
+    // Superficie ondulante.
+    final wave = Path()..moveTo(0, surfaceY);
+    for (var x = 0.0; x <= size.width; x += 6) {
+      wave.lineTo(x, surfaceY + sin(x * 0.045 + e.time * 2.2) * 1.8 + sin(x * 0.013 - e.time) * 1.2);
     }
-    text(surface.toString(), 0, 0, th.accent.withValues(alpha: 0.55));
+    canvas.drawPath(
+      wave,
+      Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.6
+        ..color = th.accent.withValues(alpha: 0.75),
+    );
+
+    // Brilhos (causticas) na agua.
+    final depth = max(1, e.rows - e.waterTop - 3);
+    for (var k = 0; k * 9 < e.cols; k++) {
+      final col = k * 9 + sin(e.time * 0.8 + k * 1.7) * 2.5;
+      final row = wt + 1 + ((k * 7) % depth);
+      text('~', col, row, th.accent.withValues(alpha: 0.16 + 0.1 * sin(e.time + k)));
+    }
 
     // Areia.
     final sand = StringBuffer();
@@ -119,6 +144,7 @@ class AquariumPainter extends CustomPainter {
         ParticleType.bubble => p.bright ? th.accent : th.bubble,
         ParticleType.food => p.bright ? th.accent : th.food,
         ParticleType.dirt => th.dirt,
+        ParticleType.splash => th.accent,
       };
       text(p.ch, p.x, p.y, c);
     }

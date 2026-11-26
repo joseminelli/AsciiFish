@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
-import 'package:window_manager/legacy.dart';
 
 import '../../app/game_controller.dart';
 import '../painter/aquarium_painter.dart';
@@ -16,7 +15,8 @@ class AquariumScreen extends StatefulWidget {
   State<AquariumScreen> createState() => _AquariumScreenState();
 }
 
-class _AquariumScreenState extends State<AquariumScreen> with SingleTickerProviderStateMixin {
+class _AquariumScreenState extends State<AquariumScreen>
+    with SingleTickerProviderStateMixin {
   late final Ticker _ticker;
   final _frame = ValueNotifier<int>(0);
   Duration _last = Duration.zero;
@@ -40,8 +40,9 @@ class _AquariumScreenState extends State<AquariumScreen> with SingleTickerProvid
   void _onTick(Duration elapsed) {
     var dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.1);
     _last = elapsed;
-    // Em segundo plano (sem foco e sem hover) reduz para ~15 FPS para poupar CPU/GPU.
-    if (!g.focused && !g.hudHover) {
+    // Visível = 60 FPS (a janela quase nunca tem foco por causa do click-through).
+    // Só reduz quando está escondida na bandeja.
+    if (g.window.hidden) {
       _acc += dt;
       if (_acc < 1 / 15) return;
       dt = _acc;
@@ -75,64 +76,70 @@ class _AquariumScreenState extends State<AquariumScreen> with SingleTickerProvid
       listenable: g,
       builder: (context, _) {
         final th = g.theme;
-        return DragToResizeArea(
-          resizeEdgeSize: 5,
-          child: Focus(
-            autofocus: true,
-            onKeyEvent: _onKey,
-            child: MouseRegion(
-              onEnter: (_) => g.setHover(true),
-              onExit: (_) => g.setHover(false),
-              onHover: (e) => g.hoverAt(e.localPosition),
-              child: Container(
-                decoration: BoxDecoration(
-                  color: th.bg,
-                  border: Border.all(color: th.fg.withValues(alpha: 0.25)),
-                ),
-                child: Stack(
-                  children: [
-                    Positioned.fill(
-                      child: LayoutBuilder(builder: (context, c) {
-                        g.onLayout(c.biggest);
-                        return GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTapDown: (d) => g.tapAt(d.localPosition),
-                          child: RepaintBoundary(
-                            child: CustomPaint(
-                              size: Size.infinite,
-                              painter: AquariumPainter(g, _frame),
-                            ),
+        return Focus(
+          autofocus: true,
+          onKeyEvent: _onKey,
+          child: Container(
+            color: Colors.transparent,
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: LayoutBuilder(
+                    builder: (context, c) {
+                      g.onLayout(c.biggest);
+                      return GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        onTapDown: (d) => g.tapAt(d.localPosition),
+                        child: RepaintBoundary(
+                          child: CustomPaint(
+                            size: Size.infinite,
+                            painter: AquariumPainter(g, _frame),
                           ),
-                        );
-                      }),
-                    ),
-                    Positioned.fill(child: HudOverlay(g)),
-                    if (g.menuOpen) Positioned.fill(child: SideDrawerMenu(g)),
-                    Positioned(
-                      top: 30,
-                      left: 8,
-                      right: 8,
-                      child: IgnorePointer(
-                        child: ValueListenableBuilder<String?>(
-                          valueListenable: g.toast,
-                          builder: (_, msg, _) => AnimatedOpacity(
-                            opacity: msg == null ? 0 : 1,
-                            duration: const Duration(milliseconds: 200),
-                            child: Center(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                color: th.fg.withValues(alpha: 0.9),
-                                child: Text(msg ?? '',
-                                    style: TextStyle(fontFamily: kMonoFamily, fontSize: 11, color: th.bg)),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                Positioned.fill(child: HudOverlay(g)),
+                if (g.menuOpen)
+                  Positioned(
+                    left: kPanelMargin,
+                    bottom: kPanelMargin + kDockSize.height + 6,
+                    width: kMenuSize.width,
+                    height: kMenuSize.height,
+                    child: SideDrawerMenu(g),
+                  ),
+                Positioned(
+                  bottom: kPanelMargin + 20,
+                  left: kPanelMargin + kDockSize.width + 12,
+                  child: IgnorePointer(
+                    child: ValueListenableBuilder<String?>(
+                      valueListenable: g.toast,
+                      builder: (_, msg, _) => AnimatedOpacity(
+                        opacity: msg == null ? 0 : 1,
+                        duration: const Duration(milliseconds: 200),
+                        child: Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            color: th.fg.withValues(alpha: 0.9),
+                            child: Text(
+                              msg ?? '',
+                              style: TextStyle(
+                                fontFamily: kMonoFamily,
+                                fontSize: 11,
+                                color: th.bg,
                               ),
                             ),
                           ),
                         ),
                       ),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
         );
