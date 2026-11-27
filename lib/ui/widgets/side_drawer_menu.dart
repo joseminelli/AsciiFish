@@ -5,6 +5,7 @@ import '../../core/models/ascii_theme.dart';
 import '../../core/models/fish_sprites.dart';
 import '../../core/models/shop_catalog.dart';
 import '../../core/simulation/progression_service.dart';
+import '../../platform/startup_service.dart';
 import '../painter/aquarium_painter.dart';
 
 /// Painel interno compacto: Status, Loja e Opções.
@@ -293,6 +294,13 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         g.setFishReacts,
       ),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
+      sw(
+        StartupService.available
+            ? 'Iniciar com o Windows'
+            : 'Iniciar com o Windows (só no app instalado)',
+        g.launchAtStartup,
+        (v) => StartupService.available ? g.setLaunchAtStartup(v) : null,
+      ),
       sw('Procurar atualizações ao abrir', s.autoUpdate, g.setAutoUpdate),
       Row(
         children: [

@@ -13,6 +13,7 @@ import '../core/models/shop_catalog.dart';
 import '../core/simulation/aquarium_engine.dart';
 import '../core/simulation/progression_service.dart';
 import '../core/storage/save_repository.dart';
+import '../platform/startup_service.dart';
 import '../platform/update_service.dart';
 import '../platform/windows_window_service.dart';
 import '../ui/painter/aquarium_painter.dart';
@@ -106,12 +107,20 @@ class GameController extends ChangeNotifier {
 
   // ------------------------------------------------------------- atualizações
 
+  bool launchAtStartup = false;
+
+  Future<void> setLaunchAtStartup(bool v) async {
+    launchAtStartup = await StartupService.set(v);
+    notifyListeners();
+  }
+
   String appVersion = '';
   UpdateInfo? update;
   bool updateBusy = false;
   String updateMsg = '';
 
   Future<void> _initUpdates() async {
+    launchAtStartup = await StartupService.isEnabled();
     try {
       appVersion = (await PackageInfo.fromPlatform()).version;
     } catch (_) {}

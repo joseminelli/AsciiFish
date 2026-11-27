@@ -30,10 +30,10 @@ Objetivo: um único `AsciiFishPet-Setup.exe`, bonito e sem atrito.
   - [x] Banner lateral (164×314) e cabeçalho (55×55) com aquário ASCII na paleta do app
   - [x] Ícone do peixe (`.ico` multi-tamanho) — hoje o app usa o ícone padrão do Flutter
   - [x] Trocar também o ícone do `.exe` (`windows/runner/resources/app_icon.ico`) e da bandeja (`assets/app_icon.ico`)
-- [x] "Iniciar com o Windows" vem do instalador (chave `HKCU\...\Run`). Falta ainda uma opção dentro do app (Opções) para ligar/desligar depois
+- [x] "Iniciar com o Windows" vem do instalador (chave `HKCU\...\Run`). Também há o interruptor em Opções (mesma chave do instalador; desativado em build de desenvolvimento)
 - [x] Gerar o `Setup.exe` (`scripts/release.ps1`) e testar instalar/desinstalar em modo silencioso
 - [ ] Revisar visualmente cada tela do assistente (screenshots) — falta testar a interface, só rodei em modo silencioso
-- [ ] (Opcional) Certificado de assinatura de código para acabar com o SmartScreen
+- [x] Assinatura de código: **decidido não assinar** (sem custo). SignPath Foundation exige licença OSI; o projeto usa PolyForm Noncommercial (`LICENSE`). Aviso do SmartScreen documentado no README/Releases; reputação melhora com o tempo. Reavaliar se um dia houver orçamento (Azure Artifact Signing / certificado OV) ou se a licença mudar
 
 ## 2. Otimização (CPU hoje ≈ 3%)
 Meta: bem abaixo de 1% parado, mantendo 60 FPS enquanto visível.

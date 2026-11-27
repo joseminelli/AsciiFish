@@ -158,11 +158,19 @@ Veja o [TODO.md](TODO.md) para o detalhamento. Resumo do que vem a seguir:
 - [x] **Identidade visual:** ícone do peixe ASCII, banners e imagem de divulgação.
 - [x] **Instalador** (Inno Setup) com "Iniciar com o Windows" marcado por padrão.
 - [x] Atualização automática pelas Releases do GitHub.
-- [ ] Opção dentro do app para ligar/desligar "Iniciar com o Windows".
+- [x] Opção dentro do app para ligar/desligar "Iniciar com o Windows".
 - [ ] **Otimização de CPU** (hoje cerca de 3% parado).
 - [ ] **Novo visual de Status e Loja.**
 - [ ] Dar uso ao humor, balancear economia e progressão, fonte monoespaçada embarcada.
 
+## Licença
+
+O código é público para você **ler, usar, estudar e modificar para fins não comerciais**, sob a [PolyForm Noncommercial 1.0.0](LICENSE). Isso inclui uso pessoal, estudo, hobby e projetos sem fins lucrativos.
+
+**Não é permitido** vender, revender ou usar o app (ou derivados) comercialmente sem autorização. Para uso comercial, fale com a Whiskline Studio.
+
+> Não é uma licença "open source" no sentido da OSI: o código é *source-available*, e por isso o projeto não se qualifica para programas de assinatura gratuita voltados a open source.
+
 ## Créditos
 
-Criado e distribuído pela **Whiskline Studio**.
+Criado e distribuído pela **Whiskline Studio** · José Minelli.
