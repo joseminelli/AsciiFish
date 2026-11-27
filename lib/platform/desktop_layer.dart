@@ -70,6 +70,82 @@ class DesktopLayer {
     return true;
   }
 
+  static final int Function() _getForegroundWindow = _user32
+      .lookupFunction<IntPtr Function(), int Function()>('GetForegroundWindow');
+  static final int Function(int, Pointer<Int32>) _getWindowRect = _user32
+      .lookupFunction<
+        Int32 Function(IntPtr, Pointer<Int32>),
+        int Function(int, Pointer<Int32>)
+      >('GetWindowRect');
+  static final int Function(int, int) _monitorFromWindow = _user32
+      .lookupFunction<IntPtr Function(IntPtr, Uint32), int Function(int, int)>(
+        'MonitorFromWindow',
+      );
+  static final int Function(int, Pointer<Int32>) _getMonitorInfo = _user32
+      .lookupFunction<
+        Int32 Function(IntPtr, Pointer<Int32>),
+        int Function(int, Pointer<Int32>)
+      >('GetMonitorInfoW');
+  static final int Function(int, Pointer<Utf16>, int) _getClassName = _user32
+      .lookupFunction<
+        Int32 Function(IntPtr, Pointer<Utf16>, Int32),
+        int Function(int, Pointer<Utf16>, int)
+      >('GetClassNameW');
+  static final int Function(int, int) _showWindow = _user32
+      .lookupFunction<Int32 Function(IntPtr, Int32), int Function(int, int)>(
+        'ShowWindow',
+      );
+
+  static String _className(int hwnd) {
+    final buf = calloc<Uint16>(256).cast<Utf16>();
+    try {
+      final n = _getClassName(hwnd, buf, 256);
+      return n > 0 ? buf.toDartString(length: n) : '';
+    } finally {
+      calloc.free(buf);
+    }
+  }
+
+  /// True se a janela em primeiro plano (jogo, vídeo, app em tela cheia) cobre o monitor inteiro
+  /// onde o widget está. Janelas maximizadas não contam (não cobrem a barra de tarefas).
+  static bool fullscreenAppActive() {
+    final me = _find('FLUTTER_RUNNER_WIN32_WINDOW');
+    final fg = _getForegroundWindow();
+    if (me == 0 || fg == 0 || fg == me) return false;
+    final cls = _className(fg);
+    if (const {
+      'Progman',
+      'WorkerW',
+      'Shell_TrayWnd',
+      'Shell_SecondaryTrayWnd',
+    }.contains(cls)) {
+      return false;
+    }
+    final mon = _monitorFromWindow(fg, 2); // MONITOR_DEFAULTTONEAREST
+    if (mon == 0 || mon != _monitorFromWindow(me, 2)) return false;
+    final rect = calloc<Int32>(4);
+    final info = calloc<Int32>(10); // MONITORINFO: cbSize, rcMonitor, rcWork, flags
+    try {
+      info[0] = 40;
+      if (_getWindowRect(fg, rect) == 0 || _getMonitorInfo(mon, info) == 0) {
+        return false;
+      }
+      return rect[0] <= info[1] &&
+          rect[1] <= info[2] &&
+          rect[2] >= info[3] &&
+          rect[3] >= info[4];
+    } finally {
+      calloc.free(rect);
+      calloc.free(info);
+    }
+  }
+
+  /// Esconde/mostra a janela sem ativá-la (SW_HIDE / SW_SHOWNOACTIVATE).
+  static void setVisible(bool visible) {
+    final me = _find('FLUTTER_RUNNER_WIN32_WINDOW');
+    if (me != 0) _showWindow(me, visible ? 4 : 0);
+  }
+
   /// Coloca a janela acima de tudo (sem ativar): usado enquanto o desktop está à mostra.
   static bool bringToTop() {
     final me = _find('FLUTTER_RUNNER_WIN32_WINDOW');

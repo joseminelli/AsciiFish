@@ -104,11 +104,28 @@ class WindowsWindowService with WindowListener {
 
   Timer? _layerTimer;
   bool _peeking = false;
+  bool _fullscreenHidden = false;
 
   /// Acompanha o Win+D: enquanto o desktop está à mostra o widget sobe; ao voltar, desce de novo.
   void _watchDesktopPeek() {
     _layerTimer ??= Timer.periodic(const Duration(milliseconds: 300), (_) {
       final s = _s;
+      // App/jogo em tela cheia: some enquanto durar (a menos que esteja fixado no topo).
+      final fs =
+          s != null && !hidden && !s.alwaysOnTop && DesktopLayer.fullscreenAppActive();
+      if (fs && !_fullscreenHidden) {
+        _fullscreenHidden = true;
+        _peeking = false;
+        windowManager.setAlwaysOnTop(false);
+        DesktopLayer.setVisible(false);
+      } else if (!fs && _fullscreenHidden) {
+        _fullscreenHidden = false;
+        if (!hidden) {
+          DesktopLayer.setVisible(true);
+          DesktopLayer.sendAboveDesktop();
+        }
+      }
+      if (_fullscreenHidden) return;
       if (s == null || hidden || s.alwaysOnTop || !s.widgetMode) {
         if (_peeking && s != null && !s.alwaysOnTop)
           windowManager.setAlwaysOnTop(false);
