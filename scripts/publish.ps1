@@ -33,8 +33,14 @@ try {
 
     $setup = 'installer\Output\AsciiFishPet-Setup.exe'
     Write-Host "==> Publicando $tag no GitHub" -ForegroundColor Cyan
-    if ($Notas) { gh release create $tag $setup --title "ASCII Fish Pet $ver" --notes $Notas }
-    else        { gh release create $tag $setup --title "ASCII Fish Pet $ver" --generate-notes }
+    if ($Notas) {
+        # Texto com várias linhas não passa como argumento no PS 5.1 (só a 1ª linha chega): usa arquivo UTF-8 sem BOM
+        $notasArq = Join-Path ([IO.Path]::GetTempPath()) "afp-notas-$ver.md"
+        [IO.File]::WriteAllText($notasArq, $Notas, (New-Object Text.UTF8Encoding($false)))
+        gh release create $tag $setup --title "ASCII Fish Pet $ver" --notes-file $notasArq
+        Remove-Item $notasArq -ErrorAction SilentlyContinue
+    }
+    else { gh release create $tag $setup --title "ASCII Fish Pet $ver" --generate-notes }
     if ($LASTEXITCODE -ne 0) { throw 'gh release create falhou' }
     Write-Host "`nRelease $tag publicada. Os apps instalados vão detectar sozinhos." -ForegroundColor Green
 } finally { Pop-Location }
