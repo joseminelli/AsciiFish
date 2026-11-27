@@ -54,6 +54,13 @@ class AquariumPainter extends CustomPainter {
 
   final GameController game;
 
+  // caches por frame: evitam recriar a areia e o degradê da água a cada repintura
+  int _sandCols = -1;
+  String _sand = '';
+  Rect? _waterRect;
+  String? _waterTheme;
+  Paint? _waterPaint;
+
   @override
   void paint(Canvas canvas, Size size) {
     final th = game.theme;
@@ -71,9 +78,12 @@ class AquariumPainter extends CustomPainter {
     final wt = e.waterTop.toDouble();
     final surfaceY = (wt + 0.5) * ch;
     final waterRect = Rect.fromLTRB(0, surfaceY, size.width, size.height);
-    canvas.drawRect(
-      waterRect,
-      Paint()
+    if (_waterPaint == null ||
+        _waterRect != waterRect ||
+        _waterTheme != game.settings.themeId) {
+      _waterRect = waterRect;
+      _waterTheme = game.settings.themeId;
+      _waterPaint = Paint()
         ..shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
@@ -81,8 +91,9 @@ class AquariumPainter extends CustomPainter {
             th.accent.withValues(alpha: 0.10),
             th.accent.withValues(alpha: 0.30),
           ],
-        ).createShader(waterRect),
-    );
+        ).createShader(waterRect);
+    }
+    canvas.drawRect(waterRect, _waterPaint!);
 
     // Superficie ondulante.
     final wave = Path()..moveTo(0, surfaceY);
@@ -111,16 +122,19 @@ class AquariumPainter extends CustomPainter {
         '~',
         col,
         row,
-        th.accent.withValues(alpha: 0.16 + 0.1 * sin(e.time + k)),
+        // alpha em degraus de 1/24: poucas cores distintas mantêm o cache de glifos eficiente
+        th.accent.withValues(
+          alpha: ((0.16 + 0.1 * sin(e.time + k)) * 24).round() / 24,
+        ),
       );
     }
 
     // Areia.
-    final sand = StringBuffer();
-    for (var i = 0; i < e.cols; i++) {
-      sand.write('.:.,.'[i % 5]);
+    if (_sandCols != e.cols) {
+      _sandCols = e.cols;
+      _sand = List.generate(e.cols, (i) => '.:.,.'[i % 5]).join();
     }
-    text(sand.toString(), 0, e.rows - 1.0, th.dirt);
+    text(_sand, 0, e.rows - 1.0, th.dirt);
 
     // Decorações estáticas.
     final base = e.rows - 2.0;

@@ -50,10 +50,17 @@ class AquariumEngine {
   double _tx = 10;
   double _ty = 5;
 
-  int get dirtCount =>
-      particles.where((p) => p.type == ParticleType.dirt).length;
-  int get foodCount =>
-      particles.where((p) => p.type == ParticleType.food).length;
+  int get dirtCount => _count(ParticleType.dirt);
+  int get foodCount => _count(ParticleType.food);
+
+  // contagem sem alocar lista (chamada várias vezes por frame)
+  int _count(ParticleType t) {
+    var n = 0;
+    for (final p in particles) {
+      if (p.type == t) n++;
+    }
+    return n;
+  }
 
   double get _minY => waterTop + 1.0;
   double get _maxY => max(_minY, rows - 3.0);

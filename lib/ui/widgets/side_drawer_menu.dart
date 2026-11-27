@@ -44,7 +44,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                   for (final (i, t) in const [
                     'Status',
                     'Loja',
-                    'Opçõesss',
+                    'Opções',
                   ].indexed)
                     InkWell(
                       onTap: () => setState(() => _tab = i),

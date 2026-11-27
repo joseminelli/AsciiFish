@@ -38,9 +38,13 @@ Objetivo: um único `AsciiFishPet-Setup.exe`, bonito e sem atrito.
 ## 2. Otimização (CPU hoje ≈ 3%)
 Meta: bem abaixo de 1% parado, mantendo 60 FPS enquanto visível.
 
-- [ ] Medir primeiro (DevTools / Performance / Task Manager) e separar: raster vs. UI vs. polling
+- [x] Medir primeiro e separar. **Achados (build release, 12 núcleos):**
+  - Sem o `Ticker` de 60 FPS o app fica em ~0,03%; com ele, 2,4–3,2% **mesmo com simulação e repintura desligadas**. Simular + desenhar custa só ~0,5–0,8%; o resto é custo fixo por frame (vsync + janela transparente larga). O polling do mouse quase não pesa (desligado: sem mudança).
+  - O consumo **depende de a janela estar visível**: com outro app cobrindo a faixa mede ~1%; visível, 3–4,5%. Todo teste precisa ser feito com o aquário visível (ex.: Win+D).
+  - Caminho promissor a validar com o aquário visível: trocar o `Ticker` por um `Timer.periodic` (testes cobertos deram ~1%, ainda sem confirmar) e/ou opção de 30 FPS.
+  - Alterações já feitas (sem ganho mensurável, mas inofensivas): cache da areia e do degradê da água, `alpha` das cáusticas em degraus (cache de glifos)
 - [ ] Desenho dos bichos: hoje cada caractere é desenhado separado (onda). Cachear o sprite como `ui.Picture`/`Paragraph` por frame de cauda, ou reduzir chamadas por frame
-- [ ] `particles.where(...)` em `dirtCount`/`foodCount` aloca listas todo frame → manter contadores
+- [x] `particles.where(...)` em `dirtCount`/`foodCount` aloca listas todo frame → contagem sem alocar
 - [ ] Polling do cursor/clique/Ctrl a cada 50 ms (FFI + channel) → intervalo adaptativo (mais lento quando o mouse está parado/fora da janela)
 - [ ] `notifyListeners` a 2 Hz reconstrói dock/menu → reconstruir só o que mudou (ValueNotifier por status)
 - [ ] Superfície da água: `Path` com ~320 segmentos por frame → menos pontos / cachear
