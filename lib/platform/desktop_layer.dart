@@ -96,6 +96,28 @@ class DesktopLayer {
         'ShowWindow',
       );
 
+  static final int Function(int, int) _getWindowLongPtr = _user32
+      .lookupFunction<IntPtr Function(IntPtr, Int32), int Function(int, int)>(
+        'GetWindowLongPtrW',
+      );
+  static final int Function(Pointer<Int32>) _queryNotificationState =
+      DynamicLibrary.open('shell32.dll').lookupFunction<
+        Int32 Function(Pointer<Int32>),
+        int Function(Pointer<Int32>)
+      >('SHQueryUserNotificationState');
+
+  /// O Windows sabe quando há app em tela cheia (jogo, vídeo, F11), inclusive
+  /// "janela sem borda": BUSY (2), D3D em tela cheia (3) ou apresentação (4).
+  static bool _shellSaysFullscreen() {
+    final st = calloc<Int32>();
+    try {
+      if (_queryNotificationState(st) != 0) return false; // HRESULT != S_OK
+      return st.value == 2 || st.value == 3 || st.value == 4;
+    } finally {
+      calloc.free(st);
+    }
+  }
+
   static String _className(int hwnd) {
     final buf = calloc<Uint16>(256).cast<Utf16>();
     try {
@@ -123,6 +145,7 @@ class DesktopLayer {
     }
     final mon = _monitorFromWindow(fg, 2); // MONITOR_DEFAULTTONEAREST
     if (mon == 0 || mon != _monitorFromWindow(me, 2)) return false;
+    if (_shellSaysFullscreen()) return true;
     final rect = calloc<Int32>(4);
     final info = calloc<Int32>(10); // MONITORINFO: cbSize, rcMonitor, rcWork, flags
     try {
@@ -130,10 +153,16 @@ class DesktopLayer {
       if (_getWindowRect(fg, rect) == 0 || _getMonitorInfo(mon, info) == 0) {
         return false;
       }
-      return rect[0] <= info[1] &&
-          rect[1] <= info[2] &&
-          rect[2] >= info[3] &&
-          rect[3] >= info[4];
+      const tol = 2;
+      bool covers(int l, int t, int r, int b) =>
+          rect[0] <= l + tol &&
+          rect[1] <= t + tol &&
+          rect[2] >= r - tol &&
+          rect[3] >= b - tol;
+      if (covers(info[1], info[2], info[3], info[4])) return true;
+      // Janela sem barra de título cobrindo a área útil (taskbar à mostra): tela cheia sem borda.
+      final hasCaption = (_getWindowLongPtr(fg, -16) & 0xC00000) == 0xC00000;
+      return !hasCaption && covers(info[5], info[6], info[7], info[8]);
     } finally {
       calloc.free(rect);
       calloc.free(info);

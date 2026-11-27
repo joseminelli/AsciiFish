@@ -260,12 +260,14 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
               ),
               child: FittedBox(
                 fit: BoxFit.scaleDown,
-                child: Text(
-                  sprite,
-                  style: base.copyWith(
-                    color: g.fishColor(rainbowT),
-                    fontSize: 24,
+                child: Text.rich(
+                  TextSpan(
+                    children: FishPalette.from(g.fishColor(rainbowT)).spans(
+                      sprite,
+                      FishSprites.zones(p.level, facingRight: false),
+                    ),
                   ),
+                  style: base.copyWith(fontSize: 24),
                 ),
               ),
             ),
@@ -616,7 +618,12 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         final color = fc.rainbow
             ? g.fishColor(DateTime.now().millisecondsSinceEpoch / 1000.0)
             : (fc.color ?? th.fish);
-        return Text('<°)))><', style: art(color, size: 20));
+        return Text.rich(
+          TextSpan(
+            children: FishPalette.from(color).spans('<°)))><', 'BCAAABB'),
+          ),
+          style: art(color, size: 20),
+        );
       case ShopCategory.food:
         final bright = it.id == 'food_bright';
         final c = bright ? th.accent : th.food;

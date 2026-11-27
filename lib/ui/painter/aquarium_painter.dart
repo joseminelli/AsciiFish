@@ -454,6 +454,10 @@ class AquariumPainter extends CustomPainter {
       f.x * cw,
       f.y * ch,
       fishCol,
+      zones: FishSprites.zones(
+        game.progress.level,
+        facingRight: f.facing > 0,
+      ),
       amp: f.waveAmp,
       phase: f.wavePhase,
       k: 0.55,
@@ -470,15 +474,17 @@ class AquariumPainter extends CustomPainter {
     double px,
     double py,
     Color c, {
+    String? zones,
     required double amp,
     required double phase,
     required double k,
     bool reverse = false,
   }) {
     final n = s.length; // sprites são ASCII: sem alocar lista de runes
+    final pal = zones == null ? null : FishPalette.from(c);
     var x = px;
     for (var i = 0; i < n; i++) {
-      final tp = g.get(s[i], c);
+      final tp = g.get(s[i], pal == null ? c : pal.of(zones![i]));
       final idx = reverse ? n - 1 - i : i;
       tp.paint(canvas, Offset(x, py + sin(phase - idx * k) * amp));
       x += tp.width;
