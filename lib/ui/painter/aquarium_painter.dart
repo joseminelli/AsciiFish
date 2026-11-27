@@ -230,7 +230,8 @@ class AquariumPainter extends CustomPainter {
 
     // Silhuetas distantes (bem apagadas).
     for (final gh in e.ghosts) {
-      text(gh.art, gh.x, gh.y, th.fg.withValues(alpha: 0.10));
+      final bob = gh.school ? sin(e.time * 2 + gh.phase) * 0.35 : 0.0;
+      text(gh.art, gh.x, gh.y + bob, th.fg.withValues(alpha: gh.alpha));
     }
 
     final base = e.rows - 2.0;

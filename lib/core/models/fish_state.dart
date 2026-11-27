@@ -21,8 +21,19 @@ class FishState {
 
 /// Silhueta distante cruzando o fundo (só decoração, sem interação).
 class Ghost {
-  Ghost(this.art, this.x, this.y, this.vx);
+  Ghost(
+    this.art,
+    this.x,
+    this.y,
+    this.vx, {
+    this.alpha = 0.10,
+    this.phase = 0,
+    this.school = false,
+  });
   final String art;
+  final double alpha; // opacidade (cardume é mais visível que as silhuetas)
+  final double phase; // fase do balanço vertical
+  final bool school; // faz parte de um cardume
   double x;
   double y;
   double vx;

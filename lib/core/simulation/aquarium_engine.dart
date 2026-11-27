@@ -51,6 +51,7 @@ class AquariumEngine {
   double _eatT = 0;
   double _turnT = 0;
   double _ghostT = 10;
+  double _schoolT = 35; // próximo cardume
   int _lastFacing = 1;
   double _wanderT = 0;
   double _mouthT = 4;
@@ -338,6 +339,7 @@ class AquariumEngine {
       g.x += g.vx * dt;
     }
     ghosts.removeWhere((g) => g.x < -16 || g.x > cols + 16);
+    _updateSchool(dt);
     _ghostT -= dt;
     if (_ghostT <= 0) {
       _ghostT = 20 + _rnd.nextDouble() * 30;
@@ -354,6 +356,33 @@ class AquariumEngine {
           ),
         );
       }
+    }
+  }
+
+  /// De tempos em tempos um cardume de peixinhos cruza a água, todos juntos.
+  void _updateSchool(double dt) {
+    _schoolT -= dt;
+    if (_schoolT > 0) return;
+    _schoolT = 70 + _rnd.nextDouble() * 70;
+    if (cols < 40 || ghosts.any((g) => g.school)) return;
+    final right = _rnd.nextBool();
+    final art = right ? '><>' : '<><';
+    final speed = (right ? 1 : -1) * (3.0 + _rnd.nextDouble() * 1.5);
+    final baseY = _minY + _rnd.nextDouble() * (_maxY - _minY);
+    final n = 7 + _rnd.nextInt(4);
+    for (var i = 0; i < n; i++) {
+      final dx = _rnd.nextDouble() * 12;
+      ghosts.add(
+        Ghost(
+          art,
+          right ? -4.0 - dx : cols + 1.0 + dx,
+          (baseY + (_rnd.nextDouble() - 0.5) * 4).clamp(_minY, _maxY),
+          speed * (0.95 + _rnd.nextDouble() * 0.1),
+          alpha: 0.28,
+          phase: _rnd.nextDouble() * 6.28,
+          school: true,
+        ),
+      );
     }
   }
 
