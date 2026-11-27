@@ -2,12 +2,32 @@ import 'package:ascii_fish_pet/core/models/ascii_theme.dart';
 import 'package:ascii_fish_pet/core/models/critter_sprites.dart';
 import 'package:ascii_fish_pet/core/models/fish_sprites.dart';
 import 'package:ascii_fish_pet/core/models/game_progress.dart';
+import 'package:ascii_fish_pet/core/models/particle.dart';
 import 'package:ascii_fish_pet/core/models/shop_catalog.dart';
 import 'package:ascii_fish_pet/core/simulation/aquarium_engine.dart';
 import 'package:ascii_fish_pet/core/simulation/progression_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test(
+    'sujeira aparece devagar (poucas em 2 min) e há corações quando feliz',
+    () {
+      final e = AquariumEngine(seed: 5)..resize(60, 16);
+      e.happiness = 95;
+      var hearts = 0;
+      for (var i = 0; i < 60 * 120; i++) {
+        e.update(1 / 60);
+        hearts =
+            hearts <
+                e.particles.where((p) => p.type == ParticleType.heart).length
+            ? e.particles.where((p) => p.type == ParticleType.heart).length
+            : hearts;
+      }
+      expect(e.dirtCount, lessThanOrEqualTo(5));
+      expect(hearts, greaterThan(0));
+    },
+  );
+
   test('motor mantém o peixe dentro do aquário', () {
     final e = AquariumEngine(seed: 1)..resize(40, 14);
     for (var i = 0; i < 6000; i++) {

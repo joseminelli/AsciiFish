@@ -55,13 +55,13 @@ Meta: bem abaixo de 1% parado, mantendo 60 FPS enquanto visível.
 - [ ] Revisar `GlyphCache` (limite 800 entradas) e o cache de cores do arco-íris
 
 ## 3. Aparência: Status e Loja
-- [ ] **Status**: layout em cartões, peixe grande com a cor equipada, barras ASCII de Fome/Humor/Limpeza/XP, estágio + próximo estágio, estatísticas em grade, conquistas com ícone e progresso
-- [ ] **Loja**: itens em cartões/grade, pré-visualização (tema, cor do peixe, bicho animado), preço e requisito de nível bem visíveis, estado "comprado/em uso", abas por categoria em vez de lista única
-- [ ] Menu geral: tabs mais bonitas, espaçamento, rolagem, animação de abrir/fechar
-- [ ] Revisar contraste nos 5 temas (principalmente Paper Light)
+- [x] **Status**: layout em cartões, peixe grande com a cor equipada, barras ASCII de Fome/Humor/Limpeza/XP, estágio + próximo estágio, estatísticas em grade, conquistas com ícone e progresso
+- [x] **Loja**: itens em cartões/grade, pré-visualização (tema, cor do peixe, bicho animado), preço e requisito de nível bem visíveis, estado "comprado/em uso", abas por categoria em vez de lista única
+- [x] Menu geral: tabs mais bonitas, espaçamento, rolagem, animação de abrir/fechar
+- [x] Revisar contraste nos 5 temas (Paper Light ajustado: peixe, pérolas e alerta)
 
 ## 4. Pendências e ideias
-- [ ] Dar uso ao **humor** (hoje só entra no XP passivo): bolhas, mais pulos, cor/brilho do peixe
+- [x] Dar uso ao **humor**: mais bolhas, corações (o pulo não depende do humor), nada mais devagar quando triste (falta cor/brilho do peixe)
 - [ ] Balanceamento: taxas de fome/limpeza, preços, ganho de pérolas (hoje são palpites)
 - [ ] Alimentar: avaliar arrastar-e-soltar do botão e alimentador automático (item de loja)
 - [x] Mover o projeto para **fora do OneDrive** (ex.: `C:\dev\AsciiFish`): ele apaga `windows/flutter/ephemeral/` e quebra o build

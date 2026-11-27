@@ -5,25 +5,47 @@ import '../models/game_progress.dart';
 import '../models/shop_catalog.dart';
 
 class Achievement {
-  const Achievement(this.id, this.name, this.desc);
+  const Achievement(this.id, this.name, this.desc, this.target);
   final String id;
   final String name;
   final String desc;
+
+  /// Valor a atingir (ex.: 5 limpezas). O valor atual vem de [achievementValue].
+  final int target;
 }
+
+/// Valor atual do progresso de uma conquista (para a barra no Status).
+int achievementValue(String id, GameProgress p) => switch (id) {
+  'first_meal' => p.feedCount,
+  'clean_water' => p.cleanCount,
+  'level5' => p.level,
+  'theme_collector' => p.owned.where((o) => o.startsWith('theme_')).length,
+  'three_days' => p.daysCared.length,
+  'pet_20' => p.interactCount,
+  _ => 0,
+};
 
 const kAchievements = [
   Achievement(
     'first_meal',
     'Primeira Refeição',
     'Alimente o peixe pela primeira vez.',
+    1,
   ),
-  Achievement('clean_water', 'Água Cristalina', 'Limpe o aquário 5 vezes.'),
-  Achievement('level5', 'Nível 5', 'Alcance o nível 5.'),
-  Achievement('theme_collector', 'Colecionador de Temas', 'Possua 3 temas.'),
+  Achievement('clean_water', 'Água Cristalina', 'Limpe o aquário 5 vezes.', 5),
+  Achievement('level5', 'Nível 5', 'Alcance o nível 5.', 5),
+  Achievement('theme_collector', 'Colecionador de Temas', 'Possua 3 temas.', 3),
   Achievement(
     'three_days',
     '3 Dias de Cuidado',
     'Cuide do peixe em 3 dias diferentes.',
+    3,
+  ),
+  Achievement(
+    'pet_20',
+    'Melhor Amigo',
+    'Faça 20 carinhos (toque no peixe) ou veja-o pular.',
+    20,
   ),
 ];
 
@@ -35,18 +57,22 @@ class ProgressionService {
   void Function(String message)? onMessage;
 
   static const hungerDecay = 0.035; // por segundo
-  static const cleanDecay = 0.012;
+  static const cleanDecay = 0.008;
+  static const dirtDecay = 0.002; // por sujeira na água
   static const maxOfflineSeconds = 10 * 3600;
 
   double _passiveT = 0;
 
   double _c(double v) => v.clamp(0.0, 100.0).toDouble();
 
-  void tickDecay(double dt, {int dirt = 0}) {
+  /// [joy]: alegria passiva por segundo vinda de companheiros e decorações.
+  void tickDecay(double dt, {int dirt = 0, double joy = 0}) {
     p.hunger = _c(p.hunger - hungerDecay * dt);
-    p.cleanliness = _c(p.cleanliness - (cleanDecay + 0.004 * dirt) * dt);
+    p.cleanliness = _c(p.cleanliness - (cleanDecay + dirtDecay * dirt) * dt);
     final good = p.hunger > 50 && p.cleanliness > 50;
-    p.happiness = _c(p.happiness + (good ? 0.004 : -0.02) * dt);
+    // companhia e decoração fazem o humor subir mais rápido e cair mais devagar
+    final delta = good ? 0.004 + joy : -0.02 + joy * 2;
+    p.happiness = _c(p.happiness + delta * dt);
 
     _passiveT += dt;
     if (_passiveT >= 60) {
@@ -80,7 +106,10 @@ class ProgressionService {
   void onEat(FoodDef f) {
     final before = p.hunger;
     p.hunger = _c(p.hunger + f.hunger);
-    p.happiness = _c(p.happiness + 1.5);
+    // comer alegra; comer com fome alegra mais (empanturrado não)
+    p.happiness = _c(
+      p.happiness + (before >= 95 ? 0.5 : (before < 40 ? 4 : 2.5)),
+    );
     p.feedCount++;
     if (before >= 95) {
       p.cleanliness = _c(
@@ -96,7 +125,7 @@ class ProgressionService {
 
   void onCleanOne() {
     p.cleanliness = _c(p.cleanliness + 4);
-    p.happiness = _c(p.happiness + 1);
+    p.happiness = _c(p.happiness + 2);
     p.cleanCount++;
     addXp(1);
     checkAchievements();
@@ -105,7 +134,7 @@ class ProgressionService {
   void onCleanAll(int count) {
     if (count == 0) return;
     p.cleanliness = _c(p.cleanliness + 4 * count + 10);
-    p.happiness = _c(p.happiness + 3);
+    p.happiness = _c(p.happiness + 4 + count.clamp(0, 6));
     p.cleanCount++;
     addXp(3 + count);
     if (count >= 3) p.pearls += 1;
@@ -117,6 +146,14 @@ class ProgressionService {
     p.happiness = _c(p.happiness + 0.8);
     p.interactCount++;
     addXp(1);
+  }
+
+  /// Carinho (toque no peixe): mais humor que um pulo, com recompensa rara em pérola.
+  void onPet() {
+    p.happiness = _c(p.happiness + 3);
+    p.interactCount++;
+    addXp(1);
+    if (p.interactCount % 10 == 0) p.pearls += 1;
   }
 
   void addXp(int n) {
@@ -135,17 +172,9 @@ class ProgressionService {
   }
 
   void checkAchievements() {
-    bool ok(String id) => switch (id) {
-      'first_meal' => p.feedCount >= 1,
-      'clean_water' => p.cleanCount >= 5,
-      'level5' => p.level >= 5,
-      'theme_collector' =>
-        p.owned.where((o) => o.startsWith('theme_')).length >= 3,
-      'three_days' => p.daysCared.length >= 3,
-      _ => false,
-    };
     for (final a in kAchievements) {
-      if (!p.achievements.contains(a.id) && ok(a.id)) {
+      if (!p.achievements.contains(a.id) &&
+          achievementValue(a.id, p) >= a.target) {
         p.achievements.add(a.id);
         p.pearls += 15;
         onMessage?.call('Conquista: ${a.name} (+15)');

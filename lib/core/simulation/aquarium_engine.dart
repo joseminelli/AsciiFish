@@ -29,6 +29,7 @@ class AquariumEngine {
   /// Escritos pelo controlador a cada frame.
   double cleanliness = 100;
   double hunger = 100;
+  double happiness = 80;
   bool oxygen = false;
   int plantStyle = 0;
 
@@ -41,7 +42,8 @@ class AquariumEngine {
   double _jumpT = 25;
 
   double _bubbleT = 1;
-  double _dirtT = 3;
+  double _dirtT = 30;
+  double _heartT = 12;
   double _wanderT = 0;
   double _mouthT = 4;
   double _curiousT = 0;
@@ -247,6 +249,22 @@ class AquariumEngine {
     }
   }
 
+  /// Corações subindo (carinho ou peixe muito feliz).
+  void spawnHearts(double x, double y, int n) {
+    for (var i = 0; i < n; i++) {
+      particles.add(
+        Particle(
+            ParticleType.heart,
+            x + (_rnd.nextDouble() - 0.5) * 2,
+            y - i * 0.5,
+            '♥',
+          )
+          ..vy = 1.1 + _rnd.nextDouble() * 0.6
+          ..phase = _rnd.nextDouble() * pi * 2,
+      );
+    }
+  }
+
   void spawnSplash(double x, int n) {
     for (var i = 0; i < n; i++) {
       particles.add(
@@ -275,15 +293,25 @@ class AquariumEngine {
   void _spawn(double dt) {
     _bubbleT -= dt;
     if (_bubbleT <= 0) {
-      _bubbleT = (oxygen ? 0.5 : 2.5) + _rnd.nextDouble() * (oxygen ? 0.8 : 3);
+      final joy = happiness > 70 ? 0.6 : 1.0; // peixe feliz solta mais bolhas
+      _bubbleT =
+          ((oxygen ? 0.5 : 2.5) + _rnd.nextDouble() * (oxygen ? 0.8 : 3)) * joy;
       final x = oxygen ? cols * 0.12 : _rnd.nextDouble() * cols;
       spawnBubbles(x, rows - 2.0, 1);
+    }
+    if (happiness > 80 && fish.mode != FishMode.jumping) {
+      _heartT -= dt;
+      if (_heartT <= 0) {
+        _heartT = 14 + _rnd.nextDouble() * 14;
+        spawnHearts(fish.x + fish.width / 2, fish.y - 1, 1);
+      }
     }
     _dirtT -= dt;
     if (_dirtT <= 0) {
       final dirtiness = (100 - cleanliness) / 100;
-      _dirtT = 4 + _rnd.nextDouble() * 4 - dirtiness * 3;
-      if (dirtCount < 14) {
+      // ~30–50 s entre sujeiras (menos quando já está sujo); no máximo 8 de uma vez
+      _dirtT = 30 + _rnd.nextDouble() * 20 - dirtiness * 12;
+      if (dirtCount < 8) {
         particles.add(
           Particle(
             ParticleType.dirt,
@@ -367,7 +395,8 @@ class AquariumEngine {
       _updateJump(dt);
       return;
     }
-    final activity = 0.5 + 0.5 * (cleanliness / 100);
+    final activity =
+        0.35 + 0.35 * (cleanliness / 100) + 0.3 * (happiness / 100);
     final tired = hunger < 25 ? 0.6 : 1.0;
     final food = _nearestFood();
     double tx, ty, speed;
@@ -527,6 +556,10 @@ class AquariumEngine {
           p.y += p.vy * dt;
           if ((p.vy > 0 && p.y >= waterTop + 0.6) || p.age > 1.5)
             particles.remove(p);
+        case ParticleType.heart:
+          p.y -= p.vy * dt;
+          p.x = p.x0 + sin(time * 2 + p.phase) * 0.5;
+          if (p.age > 2.6 || p.y < 0) particles.remove(p);
         case ParticleType.dirt:
           break;
       }

@@ -203,7 +203,8 @@ class GameController extends ChangeNotifier {
 
   void tick(double dt) {
     _clock += dt;
-    prog.tickDecay(dt, dirt: engine.dirtCount);
+    prog.tickDecay(dt, dirt: engine.dirtCount, joy: _joy);
+    engine.happiness = progress.happiness;
     engine.cleanliness = progress.cleanliness;
     engine.hunger = progress.hunger;
     final w = FishSprites.widthFor(progress.level);
@@ -214,6 +215,25 @@ class GameController extends ChangeNotifier {
       _notifyT = 0;
       notifyListeners();
     }
+  }
+
+  /// Alegria passiva (humor/s): cada companheiro e decoração comprados ajudam.
+  double get _joy {
+    final o = progress.owned;
+    var j = 0.0;
+    for (final id in const ['comp_fish', 'comp_crab', 'comp_squid']) {
+      if (o.contains(id)) j += 0.0015;
+    }
+    for (final id in const [
+      'decor_plants',
+      'decor_rocks',
+      'decor_shells',
+      'decor_castle',
+      'decor_oxygen',
+    ]) {
+      if (o.contains(id)) j += 0.0005;
+    }
+    return j;
   }
 
   void onLayout(Size size) {
@@ -284,9 +304,10 @@ class GameController extends ChangeNotifier {
     final f = engine.fish;
     if (cx >= f.x - 1 && cx <= f.x + f.width + 1 && (cy - f.y).abs() <= 1.5) {
       engine.spawnBubbles(f.mouthX, f.y, 3);
+      engine.spawnHearts(f.x + f.width / 2, f.y - 1, 2);
       if (_clock - _lastInteract > 3) {
         _lastInteract = _clock;
-        prog.onInteract();
+        prog.onPet();
         scheduleSave();
       }
       return;

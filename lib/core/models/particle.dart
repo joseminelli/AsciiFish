@@ -1,4 +1,4 @@
-enum ParticleType { bubble, food, dirt, splash }
+enum ParticleType { bubble, food, dirt, splash, heart }
 
 /// Bolhas, flocos de comida e sujeira. Coordenadas em células (colunas/linhas), contínuas.
 class Particle {

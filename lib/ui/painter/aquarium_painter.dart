@@ -197,6 +197,7 @@ class AquariumPainter extends CustomPainter {
         ParticleType.food => p.bright ? th.accent : th.food,
         ParticleType.dirt => th.dirt,
         ParticleType.splash => th.accent,
+        ParticleType.heart => const Color(0xFFFF6B8A),
       };
       if (p.type == ParticleType.food) {
         final o = Offset(p.x * cw + cw / 2, p.y * ch + ch / 2);

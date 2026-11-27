@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../app/game_controller.dart';
 import '../../core/models/ascii_theme.dart';
+import '../../core/models/critter_sprites.dart';
 import '../../core/models/fish_sprites.dart';
 import '../../core/models/shop_catalog.dart';
 import '../../core/simulation/progression_service.dart';
@@ -19,6 +20,7 @@ class SideDrawerMenu extends StatefulWidget {
 
 class _SideDrawerMenuState extends State<SideDrawerMenu> {
   int _tab = 0;
+  ShopCategory _shopCat = ShopCategory.theme;
 
   GameController get g => widget.game;
 
@@ -26,208 +28,653 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
   Widget build(BuildContext context) {
     final th = g.theme;
     final base = TextStyle(fontFamily: kMonoFamily, fontSize: 12, color: th.fg);
-    return Material(
-      color: th.bg.withValues(alpha: 0.96),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-        side: BorderSide(color: th.fg.withValues(alpha: 0.3)),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: const Duration(milliseconds: 180),
+      curve: Curves.easeOutCubic,
+      builder: (_, t, child) => Opacity(
+        opacity: t,
+        child: Transform.translate(
+          offset: Offset(0, (1 - t) * 14),
+          child: child,
+        ),
       ),
-      clipBehavior: Clip.antiAlias,
-      child: DefaultTextStyle(
-        style: base,
-        child: Column(
-          children: [
-            SizedBox(
-              height: 28,
-              child: Row(
-                children: [
-                  const SizedBox(width: 6),
-                  for (final (i, t) in const [
-                    'Status',
-                    'Loja',
-                    'Opções',
-                  ].indexed)
-                    InkWell(
-                      onTap: () => setState(() => _tab = i),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 6,
-                          vertical: 6,
-                        ),
-                        child: Text(
-                          _tab == i ? '[$t]' : ' $t ',
-                          style: base.copyWith(
-                            color: _tab == i ? th.accent : th.fg,
+      child: Material(
+        color: th.bg.withValues(alpha: 0.96),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+          side: BorderSide(color: th.fg.withValues(alpha: 0.3)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: DefaultTextStyle(
+          style: base,
+          child: Column(
+            children: [
+              SizedBox(
+                height: 34,
+                child: Row(
+                  children: [
+                    const SizedBox(width: 6),
+                    for (final (i, t) in _tabs.indexed)
+                      InkWell(
+                        onTap: () => setState(() => _tab = i),
+                        child: Container(
+                          height: 34,
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 10),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                width: 2,
+                                color: _tab == i
+                                    ? th.accent
+                                    : Colors.transparent,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            t,
+                            style: base.copyWith(
+                              color: _tab == i
+                                  ? th.accent
+                                  : th.fg.withValues(alpha: 0.75),
+                            ),
                           ),
                         ),
                       ),
+                    const Spacer(),
+                    Text(
+                      '● ${g.progress.pearls}',
+                      style: base.copyWith(color: th.food),
                     ),
-                  const Spacer(),
-                  Text(
-                    '● ${g.progress.pearls}',
-                    style: base.copyWith(color: th.food),
+                    IconButton(
+                      visualDensity: VisualDensity.compact,
+                      iconSize: 16,
+                      color: th.fg,
+                      icon: const Icon(Icons.close),
+                      onPressed: () => g.setMenu(false),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, color: th.fg.withValues(alpha: 0.25)),
+              Expanded(
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 140),
+                  child: ListView(
+                    key: ValueKey(_tab == 1 ? 'shop-$_shopCat' : 'tab-$_tab'),
+                    padding: const EdgeInsets.all(10),
+                    children: switch (_tab) {
+                      0 => _status(th, base),
+                      1 => _shop(th, base),
+                      _ => [..._options(th, base), ..._debug(th, base)],
+                    },
                   ),
-                  IconButton(
-                    visualDensity: VisualDensity.compact,
-                    iconSize: 16,
-                    color: th.fg,
-                    icon: const Icon(Icons.close),
-                    onPressed: () => g.setMenu(false),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Vermelho de alerta (mais escuro no tema claro, para manter o contraste).
+  Color get _warn =>
+      g.theme.isDark ? const Color(0xFFE5533D) : const Color(0xFFB3261E);
+  static const _tabs = ['Status', 'Loja', 'Opções'];
+  static const _catTitles = {
+    ShopCategory.theme: 'Temas',
+    ShopCategory.fishColor: 'Cores',
+    ShopCategory.food: 'Rações',
+    ShopCategory.decor: 'Decoração',
+    ShopCategory.companion: 'Amigos',
+  };
+
+  // ------------------------------------------------------------ helpers
+
+  Widget _card(
+    AsciiTheme th,
+    TextStyle base, {
+    String? title,
+    required Widget child,
+    Color? border,
+    double? width,
+    EdgeInsets pad = const EdgeInsets.all(10),
+  }) {
+    return Container(
+      width: width,
+      margin: width == null ? const EdgeInsets.only(bottom: 8) : null,
+      padding: pad,
+      decoration: BoxDecoration(
+        color: th.fg.withValues(alpha: 0.06),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: border ?? th.fg.withValues(alpha: 0.22)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (title != null) ...[
+            Text(title, style: base.copyWith(color: th.accent)),
+            const SizedBox(height: 6),
+          ],
+          child,
+        ],
+      ),
+    );
+  }
+
+  static String _bar(double v, double max, {int w = 20}) {
+    final n = max <= 0 ? 0 : (v / max * w).round().clamp(0, w);
+    return '[${'#' * n}${'.' * (w - n)}]';
+  }
+
+  Widget _meter(
+    AsciiTheme th,
+    TextStyle base,
+    String label,
+    double v,
+    double max, {
+    String? right,
+    bool warnLow = true,
+  }) {
+    final low = warnLow && v / max < 0.3;
+    final c = low ? _warn : th.fg;
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        children: [
+          SizedBox(width: 54, child: Text(label, style: base)),
+          Expanded(
+            child: Text(
+              _bar(v, max),
+              style: base.copyWith(color: c),
+              maxLines: 1,
+              overflow: TextOverflow.clip,
+            ),
+          ),
+          SizedBox(
+            width: 44,
+            child: Text(
+              right ?? '${(v / max * 100).round()}%',
+              textAlign: TextAlign.right,
+              style: base.copyWith(color: c, fontSize: 11),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _mood(double h) => h >= 80
+      ? ':D  Radiante'
+      : h >= 60
+      ? ':)  Contente'
+      : h >= 35
+      ? ':|  Meio assim'
+      : ':(  Triste';
+
+  // -------------------------------------------------------------- status
+
+  List<Widget> _status(AsciiTheme th, TextStyle base) {
+    final p = g.progress;
+    final dim = base.copyWith(
+      fontSize: 11,
+      color: th.fg.withValues(alpha: 0.65),
+    );
+    final sprite = FishSprites.frame(p.level, facingRight: false, tail: 0);
+    final next = kStages.where((s) => s.minLevel > p.level).firstOrNull;
+    final rainbowT = DateTime.now().millisecondsSinceEpoch / 1000.0;
+
+    Widget stat(String value, String label) => Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: base.copyWith(
+              fontSize: 16,
+              color: th.accent,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(label, style: dim.copyWith(fontSize: 10)),
+        ],
+      ),
+    );
+
+    return [
+      _card(
+        th,
+        base,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              height: 64,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: th.accent.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  sprite,
+                  style: base.copyWith(
+                    color: g.fishColor(rainbowT),
+                    fontSize: 24,
                   ),
-                ],
+                ),
               ),
             ),
-            Divider(height: 1, color: th.fg.withValues(alpha: 0.25)),
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.all(10),
-                children: switch (_tab) {
-                  0 => _status(th, base),
-                  1 => _shop(th, base),
-                  _ => [..._options(th, base), ..._debug(th, base)],
-                },
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                Text(
+                  g.stage.name,
+                  style: base.copyWith(fontSize: 14, color: th.accent),
+                ),
+                const Spacer(),
+                Text('Nível ${p.level}', style: base.copyWith(fontSize: 14)),
+              ],
+            ),
+            const SizedBox(height: 4),
+            _meter(
+              th,
+              base,
+              'XP',
+              p.xp.toDouble(),
+              p.xpToNextLevel.toDouble(),
+              right: '${p.xp}/${p.xpToNextLevel}',
+              warnLow: false,
+            ),
+            Text(
+              next == null
+                  ? 'Forma máxima alcançada!'
+                  : 'Próxima forma: ${next.name} no nível ${next.minLevel}',
+              style: dim,
+            ),
+          ],
+        ),
+      ),
+      _card(
+        th,
+        base,
+        title: 'Como ele está',
+        child: Column(
+          children: [
+            _meter(th, base, 'Fome', p.hunger, 100),
+            _meter(th, base, 'Humor', p.happiness, 100),
+            _meter(th, base, 'Limpeza', p.cleanliness, 100),
+            const SizedBox(height: 4),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                _mood(p.happiness),
+                style: dim.copyWith(
+                  color: p.happiness < 35
+                      ? _warn
+                      : th.fg.withValues(alpha: 0.8),
+                ),
               ),
             ),
           ],
         ),
       ),
-    );
-  }
-
-  List<Widget> _status(AsciiTheme th, TextStyle base) {
-    final p = g.progress;
-    final sprite = FishSprites.frame(p.level, facingRight: false, tail: 0);
-    return [
-      Text(sprite, style: base.copyWith(color: g.fishColor(0), fontSize: 16)),
-      Text('${g.stage.name} · Nível ${p.level}'),
-      Text('XP ${p.xp}/${p.xpToNextLevel}'),
-      const SizedBox(height: 6),
-      Text(
-        'Fome ${p.hunger.round()}  Humor ${p.happiness.round()}  Limpeza ${p.cleanliness.round()}',
-      ),
-      Text(
-        'Refeições ${p.feedCount}  Limpezas ${p.cleanCount}  Dias ${p.daysCared.length}',
-      ),
-      const SizedBox(height: 10),
-      Text('Como ganhar pérolas', style: base.copyWith(color: th.accent)),
-      Text(
-        '• Alimentar com fome < 60: +1 por floco\n'
-        '• Subir de nível: +10 + nível\n'
-        '• Limpar 3+ sujeiras de uma vez: +1\n'
-        '• Cada conquista: +15',
-        style: base.copyWith(fontSize: 11),
-      ),
-      const SizedBox(height: 10),
-      Text('Conquistas', style: base.copyWith(color: th.accent)),
-      for (final a in kAchievements)
-        Padding(
-          padding: const EdgeInsets.only(top: 3),
-          child: Text(
-            '${p.achievements.contains(a.id) ? '[x]' : '[ ]'} ${a.name}\n      ${a.desc}',
-            style: base.copyWith(
-              fontSize: 11,
-              color: th.fg.withValues(
-                alpha: p.achievements.contains(a.id) ? 1 : 0.5,
-              ),
-            ),
-          ),
+      _card(
+        th,
+        base,
+        pad: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        child: Row(
+          children: [
+            stat('${p.feedCount}', 'refeições'),
+            stat('${p.cleanCount}', 'limpezas'),
+            stat('${p.interactCount}', 'carinhos'),
+            stat('${p.daysCared.length}', 'dias'),
+          ],
         ),
+      ),
+      _card(
+        th,
+        base,
+        title: 'Conquistas  ${p.achievements.length}/${kAchievements.length}',
+        child: Column(
+          children: [
+            for (final a in kAchievements) _achievement(th, base, dim, a),
+          ],
+        ),
+      ),
+      _card(
+        th,
+        base,
+        title: 'Como deixar o peixe feliz e ganhar pérolas',
+        child: Text(
+          '• Alimentar com fome < 60: +1 pérola por floco\n'
+          '• Tocar no peixe: carinho, corações e +humor\n'
+          '• Manter a água limpa e o peixe alimentado\n'
+          '• Companheiros e decorações aumentam o humor\n'
+          '• Limpar 3+ sujeiras de uma vez: +1 pérola\n'
+          '• Subir de nível: +10 + nível · Conquista: +15',
+          style: dim,
+        ),
+      ),
     ];
   }
 
-  List<Widget> _shop(AsciiTheme th, TextStyle base) {
-    const titles = {
-      ShopCategory.theme: 'Temas',
-      ShopCategory.fishColor: 'Cores do peixe',
-      ShopCategory.food: 'Rações',
-      ShopCategory.decor: 'Decorações',
-      ShopCategory.companion: 'Companheiros',
-    };
-    final out = <Widget>[];
-    for (final cat in ShopCategory.values) {
-      out.add(
-        Padding(
-          padding: const EdgeInsets.only(top: 6, bottom: 2),
-          child: Text(titles[cat]!, style: base.copyWith(color: th.accent)),
-        ),
-      );
-      for (final it in kShopItems.where((i) => i.category == cat)) {
-        final owned = g.owns(it);
-        final equipped = g.isEquipped(it);
-        final selectable =
-            cat == ShopCategory.theme ||
-            cat == ShopCategory.fishColor ||
-            cat == ShopCategory.food;
-        String action;
-        VoidCallback? onTap;
-        if (!owned) {
-          action =
-              '[${it.price}●${it.minLevel > 1 ? ' Nv${it.minLevel}' : ''}]';
-          onTap = () => g.buy(it);
-        } else if (selectable) {
-          action = equipped ? '[em uso]' : '[usar]';
-          onTap = equipped ? null : () => g.equip(it);
-        } else {
-          action = '[ok]';
-        }
-        out.add(
-          InkWell(
-            onTap: onTap,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 3),
-              child: Row(
-                children: [
-                  if (cat == ShopCategory.fishColor) _swatch(it, th),
-                  Expanded(
-                    child: Text(
-                      '${it.name}\n${it.desc}',
-                      style: base.copyWith(fontSize: 11),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                  Text(
-                    action,
-                    style: base.copyWith(color: owned ? th.fg : th.food),
-                  ),
-                ],
-              ),
+  Widget _achievement(
+    AsciiTheme th,
+    TextStyle base,
+    TextStyle dim,
+    Achievement a,
+  ) {
+    final p = g.progress;
+    final done = p.achievements.contains(a.id);
+    final v = achievementValue(a.id, p).clamp(0, a.target);
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            done ? '★' : '☆',
+            style: base.copyWith(
+              fontSize: 18,
+              color: done ? th.food : th.fg.withValues(alpha: 0.4),
             ),
           ),
-        );
-      }
-    }
-    return out;
-  }
-
-  Widget _swatch(ShopItem it, AsciiTheme th) {
-    final fc = kFishColors.firstWhere(
-      (c) => c.id == it.id,
-      orElse: () => kFishColors.first,
-    );
-    final color = fc.color ?? th.fish;
-    return Container(
-      width: 14,
-      height: 14,
-      margin: const EdgeInsets.only(right: 8),
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: fc.rainbow ? null : color,
-        gradient: fc.rainbow
-            ? const SweepGradient(
-                colors: [
-                  Color(0xFFFF4D4D),
-                  Color(0xFFFFC21A),
-                  Color(0xFF4DFF88),
-                  Color(0xFF4DA3FF),
-                  Color(0xFFFF7AC8),
-                  Color(0xFFFF4D4D),
-                ],
-              )
-            : null,
-        border: Border.all(color: th.fg.withValues(alpha: 0.5)),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  a.name,
+                  style: base.copyWith(
+                    color: done ? th.accent : th.fg.withValues(alpha: 0.85),
+                  ),
+                ),
+                Text(a.desc, style: dim.copyWith(fontSize: 10)),
+                if (!done)
+                  Text(
+                    '${_bar(v.toDouble(), a.target.toDouble(), w: 12)} $v/${a.target}',
+                    style: dim.copyWith(fontSize: 10),
+                  ),
+              ],
+            ),
+          ),
+          if (done)
+            Text('+15●', style: dim.copyWith(color: th.food, fontSize: 10)),
+        ],
       ),
     );
+  }
+
+  // ---------------------------------------------------------------- loja
+
+  List<Widget> _shop(AsciiTheme th, TextStyle base) {
+    final items = kShopItems.where((i) => i.category == _shopCat).toList();
+    return [
+      SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final c in ShopCategory.values)
+              Padding(
+                padding: const EdgeInsets.only(right: 6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: () => setState(() => _shopCat = c),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      color: _shopCat == c
+                          ? th.accent.withValues(alpha: 0.18)
+                          : null,
+                      border: Border.all(
+                        color: _shopCat == c
+                            ? th.accent
+                            : th.fg.withValues(alpha: 0.25),
+                      ),
+                    ),
+                    child: Text(
+                      _catTitles[c]!,
+                      style: base.copyWith(
+                        fontSize: 11,
+                        color: _shopCat == c ? th.accent : th.fg,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+      const SizedBox(height: 10),
+      LayoutBuilder(
+        builder: (_, box) {
+          final w = (box.maxWidth - 8) / 2;
+          return Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [for (final it in items) _shopCard(it, th, base, w)],
+          );
+        },
+      ),
+    ];
+  }
+
+  Widget _shopCard(ShopItem it, AsciiTheme th, TextStyle base, double w) {
+    final owned = g.owns(it);
+    final equipped = g.isEquipped(it);
+    final selectable =
+        it.category == ShopCategory.theme ||
+        it.category == ShopCategory.fishColor ||
+        it.category == ShopCategory.food;
+    final levelOk = g.progress.level >= it.minLevel;
+    final canPay = g.progress.pearls >= it.price;
+    final small = base.copyWith(fontSize: 10);
+
+    final Widget status;
+    VoidCallback? onTap;
+    if (owned) {
+      if (selectable) {
+        status = _pill(
+          equipped ? 'EM USO' : 'Usar',
+          th.accent,
+          filled: equipped,
+        );
+        onTap = equipped ? null : () => g.equip(it);
+      } else {
+        status = _pill('✓ Comprado', th.fg.withValues(alpha: 0.6));
+      }
+    } else {
+      onTap = () => g.buy(it);
+      status = Row(
+        children: [
+          Text(
+            '● ${it.price}',
+            style: base.copyWith(
+              color: canPay ? th.food : th.fg.withValues(alpha: 0.45),
+            ),
+          ),
+          const Spacer(),
+          if (!levelOk)
+            _pill('Nv ${it.minLevel}', _warn)
+          else if (canPay)
+            _pill('Comprar', th.accent)
+          else
+            Text('faltam ${it.price - g.progress.pearls}', style: small),
+        ],
+      );
+    }
+
+    return _card(
+      th,
+      base,
+      width: w,
+      pad: const EdgeInsets.all(8),
+      border: equipped ? th.accent : null,
+      child: Opacity(
+        opacity: !owned && !levelOk ? 0.7 : 1,
+        child: InkWell(
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Container(
+                height: 54,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: th.bg.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: _preview(it, th),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                it.name,
+                style: base,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              SizedBox(
+                height: 26,
+                child: Text(
+                  it.desc,
+                  style: small.copyWith(color: th.fg.withValues(alpha: 0.65)),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(height: 4),
+              SizedBox(
+                height: 20,
+                child: Align(alignment: Alignment.centerLeft, child: status),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _pill(String t, Color c, {bool filled = false}) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+    decoration: BoxDecoration(
+      color: filled ? c.withValues(alpha: 0.2) : null,
+      borderRadius: BorderRadius.circular(10),
+      border: Border.all(color: c.withValues(alpha: 0.8)),
+    ),
+    child: Text(
+      t,
+      style: TextStyle(fontFamily: kMonoFamily, fontSize: 10, color: c),
+    ),
+  );
+
+  /// Pré-visualização do item (tema, cor, ração, decoração ou bicho).
+  Widget _preview(ShopItem it, AsciiTheme th) {
+    TextStyle art(Color c, {double size = 13}) => TextStyle(
+      fontFamily: kMonoFamily,
+      fontSize: size,
+      height: 1.05,
+      color: c,
+    );
+    switch (it.category) {
+      case ShopCategory.theme:
+        final t = themeById(it.id);
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+          decoration: BoxDecoration(
+            color: t.bg,
+            borderRadius: BorderRadius.circular(3),
+            border: Border.all(color: t.fg.withValues(alpha: 0.5)),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('~  ~  ~', style: art(t.accent, size: 11)),
+              Text('<o))))><', style: art(t.fish)),
+              Text('.:.,.:.,.', style: art(t.dirt, size: 11)),
+            ],
+          ),
+        );
+      case ShopCategory.fishColor:
+        final fc = kFishColors.firstWhere(
+          (c) => c.id == it.id,
+          orElse: () => kFishColors.first,
+        );
+        final color = fc.rainbow
+            ? g.fishColor(DateTime.now().millisecondsSinceEpoch / 1000.0)
+            : (fc.color ?? th.fish);
+        return Text('<°)))><', style: art(color, size: 20));
+      case ShopCategory.food:
+        final bright = it.id == 'food_bright';
+        final c = bright ? th.accent : th.food;
+        final n = it.id == 'food_nutritious' ? 5 : 3;
+        return Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (var i = 0; i < n; i++)
+              Container(
+                width: 8,
+                height: 8,
+                margin: EdgeInsets.fromLTRB(3, i.isEven ? 0 : 10, 3, 0),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: c,
+                  boxShadow: bright
+                      ? [
+                          BoxShadow(
+                            color: c.withValues(alpha: 0.6),
+                            blurRadius: 6,
+                          ),
+                        ]
+                      : null,
+                ),
+              ),
+          ],
+        );
+      case ShopCategory.decor:
+        return switch (it.id) {
+          'decor_plants' => Text(
+            '  ~   ~\n  | ) |\n  ) | )\n  ( | (',
+            style: art(th.plant, size: 11),
+          ),
+          'decor_rocks' => Text(
+            '   /\\\n _/  \\_  /\\',
+            style: art(th.fg.withValues(alpha: 0.75)),
+          ),
+          'decor_shells' => Text('@    @', style: art(th.food, size: 16)),
+          'decor_castle' => Text(
+            '|^|^|^|\n|[_ _]|\n|_| |_|',
+            style: art(th.fg.withValues(alpha: 0.85), size: 11),
+          ),
+          _ => Text(' o\n°\n .\n°', style: art(th.bubble, size: 11)),
+        };
+      case ShopCategory.companion:
+        return switch (it.id) {
+          'comp_fish' => Text(
+            CritterSprites.fish(false, 0),
+            style: art(g.fishColor(0), size: 18),
+          ),
+          'comp_crab' => Text(
+            CritterSprites.crab(0, false),
+            style: art(const Color(0xFFE5533D), size: 11),
+          ),
+          _ => Text(
+            CritterSprites.squid(false, 0),
+            style: art(const Color(0xFFB48CFF), size: 18),
+          ),
+        };
+    }
   }
 
   List<Widget> _debug(AsciiTheme th, TextStyle base) {
