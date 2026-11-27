@@ -50,7 +50,7 @@ Meta: bem abaixo de 1% parado, mantendo 60 FPS enquanto visível.
 - [ ] Polling do cursor/clique/Ctrl a cada 50 ms (FFI + channel) → intervalo adaptativo (mais lento quando o mouse está parado/fora da janela)
 - [ ] `notifyListeners` a 2 Hz reconstrói dock/menu → reconstruir só o que mudou (ValueNotifier por status)
 - [x] Superfície da água: `Paint` reutilizado (passo de 6 px mantido para não alterar o visual)
-- [ ] Quando o aquário está totalmente coberto por outro app (fullscreen/jogo), pausar ou reduzir a animação
+- [x] Quando há app/jogo em tela cheia (inclusive sem borda), o aquário some e a animação pausa (lógica a 4 Hz); padrão de 30 FPS
 - [x] Escondida na bandeja: lógica a 4 Hz e sem repintura
 - [ ] Revisar `GlyphCache` (limite 800 entradas) e o cache de cores do arco-íris
 

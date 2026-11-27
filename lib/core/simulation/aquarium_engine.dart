@@ -342,7 +342,17 @@ class AquariumEngine {
     if (_ghostT <= 0) {
       _ghostT = 20 + _rnd.nextDouble() * 30;
       if (ghosts.length < 2 && cols >= 30) {
-        const arts = ['<o)><', '<°))))><', '<=°)))))))><'];
+        // peixes comuns e, mais raro, visitantes: tartaruga, arraia e baleia
+        const arts = [
+          '<o)><',
+          '<°))))><',
+          '<=°)))))))><',
+          '<o)><',
+          '<°))))><',
+          '_(°)_,>',
+          '~<(°°)>~',
+          '<=°)))))))))))))~~~>',
+        ];
         final right = _rnd.nextBool();
         final art = arts[_rnd.nextInt(arts.length)];
         ghosts.add(
