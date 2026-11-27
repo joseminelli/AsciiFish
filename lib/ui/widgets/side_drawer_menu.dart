@@ -21,6 +21,7 @@ class SideDrawerMenu extends StatefulWidget {
 class _SideDrawerMenuState extends State<SideDrawerMenu> {
   int _tab = 0;
   ShopCategory _shopCat = ShopCategory.theme;
+  bool _onlyNew = false; // loja: esconde o que já foi comprado
 
   GameController get g => widget.game;
 
@@ -102,7 +103,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 140),
                   child: ListView(
-                    key: ValueKey(_tab == 1 ? 'shop-$_shopCat' : 'tab-$_tab'),
+                    key: ValueKey(_tab == 1 ? 'shop-$_shopCat-$_onlyNew' : 'tab-$_tab'),
                     padding: const EdgeInsets.all(10),
                     children: switch (_tab) {
                       0 => _status(th, base),
@@ -262,9 +263,13 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 fit: BoxFit.scaleDown,
                 child: Text.rich(
                   TextSpan(
-                    children: FishPalette.from(g.fishColor(rainbowT)).spans(
+                    children: g.fishPalette(rainbowT).spans(
                       sprite,
-                      FishSprites.zones(p.level, facingRight: false),
+                      FishSprites.zones(
+                        p.level,
+                        facingRight: false,
+                        stripes: g.fishStripes,
+                      ),
                     ),
                   ),
                   style: base.copyWith(fontSize: 24),
@@ -416,8 +421,35 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
   // ---------------------------------------------------------------- loja
 
   List<Widget> _shop(AsciiTheme th, TextStyle base) {
-    final items = kShopItems.where((i) => i.category == _shopCat).toList();
+    final all = kShopItems.where((i) => i.category == _shopCat).toList();
+    final items = _onlyNew ? all.where((i) => !g.owns(i)).toList() : all;
+    int ownedIn(ShopCategory c) =>
+        kShopItems.where((i) => i.category == c && g.owns(i)).length;
+    int totalIn(ShopCategory c) =>
+        kShopItems.where((i) => i.category == c).length;
     return [
+      Row(
+        children: [
+          Text(
+            '● ${g.progress.pearls} pérolas',
+            style: base.copyWith(
+              color: th.food,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const Spacer(),
+          InkWell(
+            borderRadius: BorderRadius.circular(10),
+            onTap: () => setState(() => _onlyNew = !_onlyNew),
+            child: _pill(
+              _onlyNew ? '✓ Só novidades' : 'Só novidades',
+              th.accent,
+              filled: _onlyNew,
+            ),
+          ),
+        ],
+      ),
+      const SizedBox(height: 8),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
@@ -445,7 +477,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                       ),
                     ),
                     child: Text(
-                      _catTitles[c]!,
+                      '${_catTitles[c]!} ${ownedIn(c)}/${totalIn(c)}',
                       style: base.copyWith(
                         fontSize: 11,
                         color: _shopCat == c ? th.accent : th.fg,
@@ -458,6 +490,16 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         ),
       ),
       const SizedBox(height: 10),
+      if (items.isEmpty)
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24),
+          child: Center(
+            child: Text(
+              'Você já tem tudo desta categoria! ✓',
+              style: base.copyWith(color: th.fg.withValues(alpha: 0.6)),
+            ),
+          ),
+        ),
       LayoutBuilder(
         builder: (_, box) {
           final w = (box.maxWidth - 8) / 2;
@@ -620,7 +662,10 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
             : (fc.color ?? th.fish);
         return Text.rich(
           TextSpan(
-            children: FishPalette.from(color).spans('<°)))><', 'BCAAABB'),
+            children: FishPalette.from(
+              color,
+              accent: fc.accent,
+            ).spans('<°)))><', fc.stripes ? 'BCABABB' : 'BCAAABB'),
           ),
           style: art(color, size: 20),
         );

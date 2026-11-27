@@ -106,6 +106,9 @@ class WindowsWindowService with WindowListener {
   bool _peeking = false;
   bool _fullscreenHidden = false;
 
+  /// Janela escondida (bandeja ou app em tela cheia): a simulação segue a 4 Hz, sem desenhar.
+  bool get dormant => hidden || _fullscreenHidden;
+
   /// Acompanha o Win+D: enquanto o desktop está à mostra o widget sobe; ao voltar, desce de novo.
   void _watchDesktopPeek() {
     _layerTimer ??= Timer.periodic(const Duration(milliseconds: 300), (_) {

@@ -117,10 +117,22 @@ AsciiTheme themeById(String id) =>
 
 /// Cores personalizadas do peixe (null = cor do tema; rainbow = ciclo de matiz).
 class FishColor {
-  const FishColor(this.id, this.color, {this.rainbow = false});
+  const FishColor(
+    this.id,
+    this.color, {
+    this.rainbow = false,
+    this.accent,
+    this.stripes = false,
+  });
   final String id;
   final Color? color;
   final bool rainbow;
+
+  /// Segunda cor (skins de duas cores); null = derivada da principal.
+  final Color? accent;
+
+  /// Alterna corpo/detalhe ao longo do corpo (listras).
+  final bool stripes;
 }
 
 const kFishColors = [
@@ -132,4 +144,20 @@ const kFishColors = [
   FishColor('fcolor_pink', Color(0xFFFF7AC8)),
   FishColor('fcolor_white', Color(0xFFF2F2F2)),
   FishColor('fcolor_rainbow', null, rainbow: true),
+  // Skins de duas cores
+  FishColor(
+    'fskin_clown',
+    Color(0xFFFF8A1F),
+    accent: Color(0xFFFFFFFF),
+    stripes: true,
+  ),
+  FishColor('fskin_neon', Color(0xFF19E6FF), accent: Color(0xFFFF3DCB)),
+  FishColor('fskin_sunset', Color(0xFFFF5E62), accent: Color(0xFFFFD166)),
+  FishColor(
+    'fskin_zebra',
+    Color(0xFFF2F2F2),
+    accent: Color(0xFF6B7280),
+    stripes: true,
+  ),
+  FishColor('fskin_ice', Color(0xFFBFE9FF), accent: Color(0xFF4DA3FF)),
 ];

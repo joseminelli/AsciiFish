@@ -22,6 +22,12 @@ int achievementValue(String id, GameProgress p) => switch (id) {
   'theme_collector' => p.owned.where((o) => o.startsWith('theme_')).length,
   'three_days' => p.daysCared.length,
   'pet_20' => p.interactCount,
+  'stylist' => p.colorChanges,
+  'night_owl' => p.nightFeeds,
+  'skin_collector' =>
+    p.owned
+        .where((o) => o.startsWith('fcolor_') || o.startsWith('fskin_'))
+        .length,
   _ => 0,
 };
 
@@ -46,6 +52,24 @@ const kAchievements = [
     'Melhor Amigo',
     'Faça 20 carinhos (toque no peixe) ou veja-o pular.',
     20,
+  ),
+  Achievement(
+    'stylist',
+    'Estilista',
+    'Troque a cor do peixe 5 vezes.',
+    5,
+  ),
+  Achievement(
+    'night_owl',
+    'Coruja',
+    'Alimente o peixe de madrugada (0h–5h) 3 vezes.',
+    3,
+  ),
+  Achievement(
+    'skin_collector',
+    'Guarda-roupa',
+    'Possua 5 cores ou skins de peixe.',
+    5,
   ),
 ];
 
@@ -111,6 +135,7 @@ class ProgressionService {
       p.happiness + (before >= 95 ? 0.5 : (before < 40 ? 4 : 2.5)),
     );
     p.feedCount++;
+    if (DateTime.now().hour < 5) p.nightFeeds++;
     if (before >= 95) {
       p.cleanliness = _c(
         p.cleanliness - 1.5,

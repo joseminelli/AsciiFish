@@ -13,6 +13,8 @@ class GameProgress {
     this.feedCount = 0,
     this.cleanCount = 0,
     this.interactCount = 0,
+    this.colorChanges = 0,
+    this.nightFeeds = 0,
     DateTime? lastSavedAt,
   }) : owned =
            owned ??
@@ -34,6 +36,8 @@ class GameProgress {
   int feedCount;
   int cleanCount;
   int interactCount;
+  int colorChanges; // trocas de cor/skin do peixe
+  int nightFeeds; // refeições de madrugada (0h–5h)
   DateTime lastSavedAt;
 
   int get xpToNextLevel => 40 + level * 20;
@@ -52,6 +56,8 @@ class GameProgress {
     'feedCount': feedCount,
     'cleanCount': cleanCount,
     'interactCount': interactCount,
+    'colorChanges': colorChanges,
+    'nightFeeds': nightFeeds,
     'lastSavedAt': lastSavedAt.toIso8601String(),
   };
 
@@ -73,6 +79,8 @@ class GameProgress {
       feedCount: j['feedCount'] as int? ?? 0,
       cleanCount: j['cleanCount'] as int? ?? 0,
       interactCount: j['interactCount'] as int? ?? 0,
+      colorChanges: j['colorChanges'] as int? ?? 0,
+      nightFeeds: j['nightFeeds'] as int? ?? 0,
       lastSavedAt:
           DateTime.tryParse(j['lastSavedAt'] as String? ?? '') ??
           DateTime.now(),

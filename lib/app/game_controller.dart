@@ -90,6 +90,17 @@ class GameController extends ChangeNotifier {
     return fc.color ?? theme.fish;
   }
 
+  FishColor get _fishColorDef => kFishColors.firstWhere(
+    (c) => c.id == settings.fishColorId,
+    orElse: () => kFishColors.first,
+  );
+
+  /// Cores (corpo/detalhe/olho) do peixe equipado.
+  FishPalette fishPalette(double t) =>
+      FishPalette.from(fishColor(t), accent: _fishColorDef.accent);
+
+  bool get fishStripes => _fishColorDef.stripes;
+
   FishStage get stage => FishSprites.stageFor(progress.level);
 
   void start() {
@@ -447,7 +458,9 @@ class GameController extends ChangeNotifier {
       settings.themeId = i.id;
       themeId.value = i.id;
     } else if (i.category == ShopCategory.fishColor) {
+      if (settings.fishColorId != i.id) progress.colorChanges++;
       settings.fishColorId = i.id;
+      prog.checkAchievements();
     } else if (i.category == ShopCategory.light) {
       settings.lightId = i.id;
     } else if (i.category == ShopCategory.food) {

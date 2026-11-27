@@ -49,7 +49,7 @@ class _AquariumScreenState extends State<AquariumScreen> {
 
   void _onFrame(Duration _) {
     if (!_alive) return;
-    if (g.window.hidden) {
+    if (g.window.dormant) {
       _onHiddenTick();
       return;
     }
@@ -63,7 +63,7 @@ class _AquariumScreenState extends State<AquariumScreen> {
     }
   }
 
-  /// Escondida na bandeja: só avança a lógica (fome etc.) a 4 Hz e não pede quadros.
+  /// Escondida (bandeja ou tela cheia): só avança a lógica (fome etc.) a 4 Hz e não pede quadros.
   void _onHiddenTick() {
     if (!_alive) return;
     _step(maxDt: 1.0);
@@ -78,7 +78,7 @@ class _AquariumScreenState extends State<AquariumScreen> {
   }
 
   void _next() {
-    if (g.window.hidden) {
+    if (g.window.dormant) {
       _wake = Timer(const Duration(milliseconds: 250), _onHiddenTick);
     } else {
       _schedule();

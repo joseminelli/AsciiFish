@@ -93,10 +93,15 @@ class FishSprites {
 
   /// Zona de cor de cada caractere do sprite (mesmo tamanho do [frame]):
   /// `A` corpo, `B` detalhes (cabeça, cauda, nadadeiras), `C` olho.
-  static String zones(int level, {required bool facingRight}) {
+  static String zones(
+    int level, {
+    required bool facingRight,
+    bool stripes = false,
+  }) {
     final left = stageFor(level).body.replaceFirst('{T}', _tailFrames[0]);
     final eye = left.indexOf(RegExp('[o°]'));
     final z = StringBuffer();
+    var body = 0;
     for (var i = 0; i < left.length; i++) {
       final c = left[i];
       if (i == eye) {
@@ -104,7 +109,7 @@ class FishSprites {
       } else if (i == 0 || i >= left.length - 2 || '{}=§~'.contains(c)) {
         z.write('B');
       } else {
-        z.write('A');
+        z.write(stripes && body++ % 2 == 1 ? 'B' : 'A');
       }
     }
     final s = z.toString();
@@ -120,10 +125,11 @@ class FishPalette {
   const FishPalette(this.a, this.b, this.c);
   final Color a, b, c;
 
-  factory FishPalette.from(Color a) {
+  /// Com [accent], usa a segunda cor escolhida em vez da derivada.
+  factory FishPalette.from(Color a, {Color? accent}) {
     final hsl = HSLColor.fromColor(a);
     final l = hsl.lightness;
-    final b = hsl
+    final b = accent ?? hsl
         .withLightness(l > 0.6 ? l - 0.26 : l + 0.2)
         .withHue((hsl.hue + 14) % 360)
         .toColor();

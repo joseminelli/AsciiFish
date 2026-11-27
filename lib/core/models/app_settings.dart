@@ -10,7 +10,7 @@ class AppSettings {
     this.fishReacts = true,
     this.autoHideHud = true,
     this.autoUpdate = true,
-    this.fps = 60,
+    this.fps = 30,
     this.lastUpdateCheck = 0,
     this.fontSize = 13,
     this.windowX,
