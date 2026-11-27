@@ -17,6 +17,16 @@ Uma faixa transparente na largura da tela, logo acima da barra de tarefas, com �
 
 Feito e distribuído pela **Whiskline Studio**.
 
+## Como fica
+
+O aquário na base do desktop, sobre o papel de parede:
+
+![ASCII Fish Pet no desktop](docs/screenshot-desktop.png)
+
+E por cima dos outros apps, sem atrapalhar o que você está fazendo:
+
+![ASCII Fish Pet sobre um navegador](docs/screenshot-apps.png)
+
 ## Recursos
 
 - **Aquário no desktop:** janela transparente e sem bordas, encaixada acima da taskbar, com click-through (só o peixe, a sujeira e o painel de controle capturam o mouse).
