@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -521,6 +522,17 @@ class GameController extends ChangeNotifier {
 
   void setAutoHideHud(bool v) {
     settings.autoHideHud = v;
+    scheduleSave();
+    notifyListeners();
+  }
+
+  /// Espera entre um quadro e o pedido do próximo; o quadro cai no vsync seguinte.
+  /// É o intervalo da meta menos ~4 ms, para o vsync mais próximo ficar no alvo
+  /// (monitores de 60, 120 ou 144 Hz). Sem isso o app rodava na taxa do monitor.
+  int get frameDelayMs => (1000 / settings.fps).round() - 4;
+
+  void setFps(int v) {
+    settings.fps = v;
     scheduleSave();
     notifyListeners();
   }

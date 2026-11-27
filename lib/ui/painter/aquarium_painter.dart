@@ -24,6 +24,9 @@ class GlyphCache {
   final double fontSize;
   late final Size cell;
   final Map<String, TextPainter> _cache = {};
+  // Caracteres únicos (o caso quente: sprites, plantas, bolhas) usam chave inteira,
+  // sem montar uma String por chamada.
+  final Map<int, TextPainter> _single = {};
 
   TextStyle style(Color c) => TextStyle(
     fontFamily: kMonoFamily,
@@ -33,19 +36,29 @@ class GlyphCache {
     height: 1.0,
   );
 
+  TextPainter _make(String s, Color c) => TextPainter(
+    text: TextSpan(text: s, style: style(c)),
+    textDirection: TextDirection.ltr,
+  )..layout();
+
   TextPainter get(String s, Color c) {
-    if (_cache.length > 800) {
+    if (s.length == 1) {
+      if (_single.length > 800) {
+        for (final t in _single.values) {
+          t.dispose();
+        }
+        _single.clear();
+      }
+      final key = (s.codeUnitAt(0) << 32) | c.toARGB32();
+      return _single[key] ??= _make(s, c);
+    }
+    if (_cache.length > 200) {
       for (final t in _cache.values) {
         t.dispose();
       }
       _cache.clear();
     }
-    return _cache.putIfAbsent('${c.toARGB32()}|$s', () {
-      return TextPainter(
-        text: TextSpan(text: s, style: style(c)),
-        textDirection: TextDirection.ltr,
-      )..layout();
-    });
+    return _cache.putIfAbsent('${c.toARGB32()}|$s', () => _make(s, c));
   }
 }
 
@@ -60,6 +73,14 @@ class AquariumPainter extends CustomPainter {
   Rect? _waterRect;
   String? _waterTheme;
   Paint? _waterPaint;
+  final Path _surface = Path();
+  final Paint _fill = Paint();
+  final Paint _stroke = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.4;
+  final Paint _wavePaint = Paint()
+    ..style = PaintingStyle.stroke
+    ..strokeWidth = 1.6;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -96,7 +117,9 @@ class AquariumPainter extends CustomPainter {
     canvas.drawRect(waterRect, _waterPaint!);
 
     // Superficie ondulante.
-    final wave = Path()..moveTo(0, surfaceY);
+    final wave = _surface
+      ..reset()
+      ..moveTo(0, surfaceY);
     for (var x = 0.0; x <= size.width; x += 6) {
       wave.lineTo(
         x,
@@ -107,10 +130,7 @@ class AquariumPainter extends CustomPainter {
     }
     canvas.drawPath(
       wave,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.6
-        ..color = th.accent.withValues(alpha: 0.75),
+      _wavePaint..color = th.accent.withValues(alpha: 0.75),
     );
 
     // Brilhos (causticas) na agua.
@@ -180,8 +200,8 @@ class AquariumPainter extends CustomPainter {
       };
       if (p.type == ParticleType.food) {
         final o = Offset(p.x * cw + cw / 2, p.y * ch + ch / 2);
-        canvas.drawCircle(o, 6, Paint()..color = c.withValues(alpha: 0.25));
-        canvas.drawCircle(o, 3, Paint()..color = c);
+        canvas.drawCircle(o, 6, _fill..color = c.withValues(alpha: 0.25));
+        canvas.drawCircle(o, 3, _fill..color = c);
       } else if (p.type == ParticleType.dirt) {
         _paintDirt(canvas, p, cw, ch, e.time, th.isDark);
       } else {
@@ -287,11 +307,11 @@ class AquariumPainter extends CustomPainter {
     required double k,
     bool reverse = false,
   }) {
-    final runes = s.runes.toList();
+    final n = s.length; // sprites são ASCII: sem alocar lista de runes
     var x = px;
-    for (var i = 0; i < runes.length; i++) {
-      final tp = g.get(String.fromCharCode(runes[i]), c);
-      final idx = reverse ? runes.length - 1 - i : i;
+    for (var i = 0; i < n; i++) {
+      final tp = g.get(s[i], c);
+      final idx = reverse ? n - 1 - i : i;
       tp.paint(canvas, Offset(x, py + sin(phase - idx * k) * amp));
       x += tp.width;
     }
@@ -317,20 +337,18 @@ class AquariumPainter extends CustomPainter {
       height: h,
     );
 
-    final fill = Paint()..color = const Color(0xFF8A5A24);
-    final edge = Paint()
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.4
-      ..color = dark ? const Color(0xFFE6B87A) : const Color(0xFF2B1A08);
-    canvas.drawOval(body, fill);
-    canvas.drawOval(body, edge);
+    canvas.drawOval(body, _fill..color = const Color(0xFF8A5A24));
+    canvas.drawOval(
+      body,
+      _stroke..color = dark ? const Color(0xFFE6B87A) : const Color(0xFF2B1A08),
+    );
     canvas.drawOval(
       Rect.fromCenter(
         center: body.center.translate(-w * 0.18, -h * 0.18),
         width: w * 0.35,
         height: h * 0.3,
       ),
-      Paint()..color = const Color(0xFFC48A4A),
+      _fill..color = const Color(0xFFC48A4A),
     );
 
     // fiapos subindo
@@ -342,7 +360,7 @@ class AquariumPainter extends CustomPainter {
       canvas.drawCircle(
         Offset(sx, sy),
         1.8,
-        Paint()
+        _fill
           ..color = (dark ? const Color(0xFFD8C49A) : const Color(0xFF6B5B45))
               .withValues(alpha: (1 - ph) * 0.8),
       );

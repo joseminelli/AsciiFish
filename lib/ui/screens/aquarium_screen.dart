@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -15,41 +17,72 @@ class AquariumScreen extends StatefulWidget {
   State<AquariumScreen> createState() => _AquariumScreenState();
 }
 
-class _AquariumScreenState extends State<AquariumScreen>
-    with SingleTickerProviderStateMixin {
-  late final Ticker _ticker;
+class _AquariumScreenState extends State<AquariumScreen> {
   final _frame = ValueNotifier<int>(0);
+  final _clock = Stopwatch()..start();
   Duration _last = Duration.zero;
-  double _acc = 0;
+  Timer? _wake;
+  bool _alive = true;
 
   GameController get g => widget.game;
 
   @override
   void initState() {
     super.initState();
-    _ticker = createTicker(_onTick)..start();
+    _schedule();
   }
 
   @override
   void dispose() {
-    _ticker.dispose();
+    _alive = false;
+    _wake?.cancel();
     _frame.dispose();
     super.dispose();
   }
 
-  void _onTick(Duration elapsed) {
-    var dt = ((elapsed - _last).inMicroseconds / 1e6).clamp(0.0, 0.1);
-    _last = elapsed;
-    // Visível = 60 FPS (a janela quase nunca tem foco por causa do click-through).
-    // Só reduz quando está escondida na bandeja.
+  // Sem Ticker contínuo: cada quadro agenda o próximo. Um Ticker acorda o motor a cada vsync
+  // e cada quadro apresentado custa CPU (janela transparente), mesmo sem nada novo para
+  // desenhar. Aqui o ritmo vem da opção de FPS e o quadro continua alinhado ao vsync.
+  void _schedule() {
+    if (_alive) SchedulerBinding.instance.scheduleFrameCallback(_onFrame);
+  }
+
+  void _onFrame(Duration _) {
+    if (!_alive) return;
     if (g.window.hidden) {
-      _acc += dt;
-      if (_acc < 1 / 15) return;
-      dt = _acc;
-      _acc = 0;
+      _onHiddenTick();
+      return;
     }
-    g.tick(dt);
+    _step(maxDt: 0.1);
     _frame.value++;
+    final ms = g.frameDelayMs;
+    if (ms <= 0) {
+      _schedule();
+    } else {
+      _wake = Timer(Duration(milliseconds: ms), _schedule);
+    }
+  }
+
+  /// Escondida na bandeja: só avança a lógica (fome etc.) a 4 Hz e não pede quadros.
+  void _onHiddenTick() {
+    if (!_alive) return;
+    _step(maxDt: 1.0);
+    _next();
+  }
+
+  void _step({required double maxDt}) {
+    final now = _clock.elapsed;
+    final dt = ((now - _last).inMicroseconds / 1e6).clamp(0.0, maxDt);
+    _last = now;
+    g.tick(dt);
+  }
+
+  void _next() {
+    if (g.window.hidden) {
+      _wake = Timer(const Duration(milliseconds: 250), _onHiddenTick);
+    } else {
+      _schedule();
+    }
   }
 
   KeyEventResult _onKey(FocusNode node, KeyEvent e) {

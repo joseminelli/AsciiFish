@@ -324,6 +324,23 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           ),
         ],
       ),
+      Row(
+        children: [
+          Text('Quadros por segundo', style: base),
+          const Spacer(),
+          for (final f in const [60, 30, 20])
+            TextButton(
+              onPressed: () => g.setFps(f),
+              child: Text(
+                s.fps == f ? '[$f]' : ' $f ',
+                style: base.copyWith(
+                  color: s.fps == f ? th.accent : th.fg.withValues(alpha: 0.6),
+                  fontSize: 11,
+                ),
+              ),
+            ),
+        ],
+      ),
       const SizedBox(height: 4),
       Text('Tamanho da fonte: ${s.fontSize.round()}'),
       Slider(
