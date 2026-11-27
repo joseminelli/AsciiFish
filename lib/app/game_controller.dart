@@ -230,6 +230,8 @@ class GameController extends ChangeNotifier {
       'decor_shells',
       'decor_castle',
       'decor_oxygen',
+      'decor_coral',
+      'decor_anemone',
     ]) {
       if (o.contains(id)) j += 0.0005;
     }
@@ -417,6 +419,7 @@ class GameController extends ChangeNotifier {
     ShopCategory.theme => settings.themeId == i.id,
     ShopCategory.food => progress.foodId == i.id,
     ShopCategory.fishColor => settings.fishColorId == i.id,
+    ShopCategory.light => settings.lightId == i.id,
     _ => owns(i),
   };
 
@@ -445,6 +448,8 @@ class GameController extends ChangeNotifier {
       themeId.value = i.id;
     } else if (i.category == ShopCategory.fishColor) {
       settings.fishColorId = i.id;
+    } else if (i.category == ShopCategory.light) {
+      settings.lightId = i.id;
     } else if (i.category == ShopCategory.food) {
       progress.foodId = i.id;
     }
@@ -466,7 +471,19 @@ class GameController extends ChangeNotifier {
 
   // ------------------------------------------------------------- debug
 
+  /// Hora do dia usada só com o debug ligado (0–24). Não é salva.
+  double debugHour = 12;
+
+  void setDebugHour(double h) {
+    debugHour = h.clamp(0.0, 24.0).toDouble();
+    notifyListeners();
+  }
+
   void setDebugMode(bool v) {
+    if (v && !settings.debugMode) {
+      final n = DateTime.now();
+      debugHour = n.hour + n.minute / 60; // começa na hora atual
+    }
     settings.debugMode = v;
     scheduleSave();
     notifyListeners();
@@ -522,17 +539,29 @@ class GameController extends ChangeNotifier {
       ..interactCount = 0
       ..foodId = 'food_basic'
       ..owned.clear()
-      ..owned.addAll({'theme_oled', 'food_basic', 'fcolor_default'})
+      ..owned.addAll({
+        'theme_oled',
+        'food_basic',
+        'fcolor_default',
+        'light_none',
+      })
       ..achievements.clear()
       ..daysCared.clear();
     settings
       ..themeId = 'theme_oled'
-      ..fishColorId = 'fcolor_default';
+      ..fishColorId = 'fcolor_default'
+      ..lightId = 'light_none';
     themeId.value = 'theme_oled';
     _syncEngine();
     showToast('Progresso resetado');
     notifyListeners();
     scheduleSave();
+  }
+
+  void setDayNight(bool v) {
+    settings.dayNight = v;
+    scheduleSave();
+    notifyListeners();
   }
 
   void setFishReacts(bool v) {

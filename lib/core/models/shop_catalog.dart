@@ -1,4 +1,4 @@
-enum ShopCategory { theme, fishColor, food, decor, companion }
+enum ShopCategory { theme, fishColor, food, decor, light, companion }
 
 class ShopItem {
   const ShopItem(
@@ -110,6 +110,43 @@ const kShopItems = [
     'Bolhas contínuas no fundo.',
     ShopCategory.decor,
     70,
+  ),
+  ShopItem(
+    'decor_coral',
+    'Coral',
+    'Coral ramificado no fundo.',
+    ShopCategory.decor,
+    60,
+  ),
+  ShopItem(
+    'decor_anemone',
+    'Anêmona',
+    'Tentáculos que balançam.',
+    ShopCategory.decor,
+    90,
+    minLevel: 4,
+  ),
+  // Luzes (uma ativa por vez)
+  ShopItem(
+    'light_none',
+    'Sem luz',
+    'Sem iluminação colorida.',
+    ShopCategory.light,
+    0,
+  ),
+  ShopItem(
+    'light_blue',
+    'LED Azul',
+    'Brilho azul, mais forte à noite.',
+    ShopCategory.light,
+    50,
+  ),
+  ShopItem(
+    'light_purple',
+    'LED Roxo',
+    'Brilho roxo, mais forte à noite.',
+    ShopCategory.light,
+    50,
   ),
   // Companheiros
   ShopItem(

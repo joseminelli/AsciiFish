@@ -128,6 +128,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
     ShopCategory.fishColor: 'Cores',
     ShopCategory.food: 'Rações',
     ShopCategory.decor: 'Decoração',
+    ShopCategory.light: 'Luzes',
     ShopCategory.companion: 'Amigos',
   };
 
@@ -474,6 +475,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
     final selectable =
         it.category == ShopCategory.theme ||
         it.category == ShopCategory.fishColor ||
+        it.category == ShopCategory.light ||
         it.category == ShopCategory.food;
     final levelOk = g.progress.level >= it.minLevel;
     final canPay = g.progress.pearls >= it.price;
@@ -652,6 +654,14 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
             '   /\\\n _/  \\_  /\\',
             style: art(th.fg.withValues(alpha: 0.75)),
           ),
+          'decor_coral' => Text(
+            '\\|/ Y\n |\\/|\n \\||/',
+            style: art(const Color(0xFFFF7A6B), size: 12),
+          ),
+          'decor_anemone' => Text(
+            '\\|/|\\|/\n(_____)',
+            style: art(const Color(0xFFFF8AD0), size: 12),
+          ),
           'decor_shells' => Text('@    @', style: art(th.food, size: 16)),
           'decor_castle' => Text(
             '|^|^|^|\n|[_ _]|\n|_| |_|',
@@ -659,6 +669,29 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           ),
           _ => Text(' o\n°\n .\n°', style: art(th.bubble, size: 11)),
         };
+      case ShopCategory.light:
+        final lc = switch (it.id) {
+          'light_blue' => const Color(0xFF4DA3FF),
+          'light_purple' => const Color(0xFFB07CFF),
+          _ => null,
+        };
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(4),
+            gradient: lc == null
+                ? null
+                : LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      lc.withValues(alpha: 0.55),
+                      lc.withValues(alpha: 0.1),
+                    ],
+                  ),
+          ),
+          child: Text('<o))))><', style: art(th.fish)),
+        );
       case ShopCategory.companion:
         return switch (it.id) {
           'comp_fish' => Text(
@@ -675,6 +708,12 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
           ),
         };
     }
+  }
+
+  String _fmtHour(double h) {
+    final hh = h.floor() % 24;
+    final mm = ((h - h.floor()) * 60).round() % 60;
+    return '${hh.toString().padLeft(2, '0')}:${mm.toString().padLeft(2, '0')}';
   }
 
   List<Widget> _debug(AsciiTheme th, TextStyle base) {
@@ -716,6 +755,28 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
             b('Resetar progresso', g.debugReset),
           ],
         ),
+      if (g.settings.debugMode) ...[
+        Text(
+          'Hora do dia (debug): ${_fmtHour(g.debugHour)}',
+          style: base.copyWith(fontSize: 11),
+        ),
+        Slider(
+          min: 0,
+          max: 24,
+          divisions: 96,
+          value: g.debugHour.clamp(0, 24).toDouble(),
+          onChanged: g.setDebugHour,
+        ),
+        Wrap(
+          children: [
+            b('Madrugada 3h', () => g.setDebugHour(3)),
+            b('Manhã 7h', () => g.setDebugHour(7)),
+            b('Dia 13h', () => g.setDebugHour(13)),
+            b('Entardecer 18h', () => g.setDebugHour(18)),
+            b('Noite 23h', () => g.setDebugHour(23)),
+          ],
+        ),
+      ],
     ];
   }
 
@@ -741,6 +802,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         g.setFishReacts,
       ),
       sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
+      sw('Ciclo dia e noite (segue o relógio)', s.dayNight, g.setDayNight),
       sw(
         StartupService.available
             ? 'Iniciar com o Windows'

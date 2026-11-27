@@ -74,6 +74,10 @@ class AquariumPainter extends CustomPainter {
   String? _waterTheme;
   Paint? _waterPaint;
   final Path _surface = Path();
+  final Path _ray = Path();
+  final Path _dune = Path();
+  Size? _duneSize;
+  int _duneRows = -1;
   final Paint _fill = Paint();
   final Paint _stroke = Paint()
     ..style = PaintingStyle.stroke
@@ -90,6 +94,18 @@ class AquariumPainter extends CustomPainter {
     final cw = g.cell.width, ch = g.cell.height;
     final owned = game.progress.owned;
     final fishCol = game.fishColor(e.time);
+
+    // Ciclo dia/noite pelo relógio: 1 = pleno dia (10h–16h), 0 = noite (22h–4h).
+    // Com o debug ligado, só o controle de debug define a hora; senão, o relógio.
+    final dbg = game.settings.debugMode;
+    final now = DateTime.now();
+    final hour = dbg ? game.debugHour : now.hour + now.minute / 60;
+    final day = (dbg || game.settings.dayNight)
+        ? (0.5 + 0.8 * cos((hour - 13) / 24 * 2 * pi))
+              .clamp(0.0, 1.0)
+              .toDouble()
+        : 1.0;
+    final night = 1 - day;
 
     void text(String s, double col, double row, Color c) {
       g.get(s, c).paint(canvas, Offset(col * cw, row * ch));
@@ -110,11 +126,34 @@ class AquariumPainter extends CustomPainter {
           end: Alignment.bottomCenter,
           colors: [
             th.accent.withValues(alpha: 0.10),
-            th.accent.withValues(alpha: 0.30),
+            th.accent.withValues(alpha: 0.24),
+            Color.lerp(th.accent, th.bg, 0.55)!.withValues(alpha: 0.42),
           ],
+          stops: const [0, 0.55, 1],
         ).createShader(waterRect);
     }
     canvas.drawRect(waterRect, _waterPaint!);
+
+    // Raios de luz descendo da superfície, balançando devagar.
+    final rayColor = Color.lerp(
+      th.accent,
+      const Color(0xFFFFFFFF),
+      th.isDark ? 0.5 : 0.2,
+    )!.withValues(alpha: (th.isDark ? 0.05 : 0.07) * (0.4 + 0.6 * day));
+    final rays = max(3, (size.width / 260).round());
+    for (var k = 0; k < rays; k++) {
+      final x0 =
+          size.width * (k + 0.5) / rays + sin(e.time * 0.25 + k * 2.1) * 24;
+      final w = 10.0 + 6 * sin(e.time * 0.4 + k);
+      _ray
+        ..reset()
+        ..moveTo(x0 - w, surfaceY)
+        ..lineTo(x0 + w, surfaceY)
+        ..lineTo(x0 + w + 70, size.height)
+        ..lineTo(x0 - w + 30, size.height)
+        ..close();
+      canvas.drawPath(_ray, _fill..color = rayColor);
+    }
 
     // Superficie ondulante.
     final wave = _surface
@@ -133,6 +172,26 @@ class AquariumPainter extends CustomPainter {
       _wavePaint..color = th.accent.withValues(alpha: 0.75),
     );
 
+    // Reflexo do peixe na superfície: brilho que cresce quando ele está perto dela.
+    final fs = e.fish;
+    final prox = fs.y < e.waterTop
+        ? 1 - (e.waterTop - fs.y) / 4
+        : 1 - (fs.y - e.waterTop) / 3.5;
+    if (prox > 0) {
+      final a = prox.clamp(0.0, 1.0) * 0.4;
+      final glow = Color.lerp(th.accent, const Color(0xFFFFFFFF), 0.6)!;
+      final c = Offset((fs.x + fs.width / 2) * cw, surfaceY);
+      final wd = 30 + fs.width * cw * 0.9;
+      canvas.drawOval(
+        Rect.fromCenter(center: c, width: wd, height: 6),
+        _fill..color = glow.withValues(alpha: a),
+      );
+      canvas.drawOval(
+        Rect.fromCenter(center: c, width: wd * 1.7, height: 3),
+        _fill..color = glow.withValues(alpha: a * 0.5),
+      );
+    }
+
     // Brilhos (causticas) na agua.
     final depth = max(1, e.rows - e.waterTop - 3);
     for (var k = 0; k * 9 < e.cols; k++) {
@@ -149,18 +208,86 @@ class AquariumPainter extends CustomPainter {
       );
     }
 
-    // Areia.
+    // Plâncton: pontinhos fracos à deriva (posição calculada do tempo, sem estado).
+    final span = max(1, e.rows - e.waterTop - 3);
+    for (var k = 0; k < max(8, e.cols ~/ 4); k++) {
+      final x =
+          ((k * 37 % 100) / 100 * e.cols +
+              e.time * (0.2 + (k % 4) * 0.08) +
+              sin(e.time * 0.7 + k) * 1.2) %
+          e.cols;
+      final y =
+          wt +
+          1 +
+          (k * 53 % 100) / 100 * span +
+          sin(e.time * 0.5 + k * 1.3) * 0.6;
+      canvas.drawCircle(
+        Offset(x * cw, y * ch),
+        0.8 + (k % 3) * 0.3,
+        _fill..color = th.fg.withValues(alpha: 0.10 + 0.07 * sin(e.time + k)),
+      );
+    }
+
+    // Silhuetas distantes (bem apagadas).
+    for (final gh in e.ghosts) {
+      text(gh.art, gh.x, gh.y, th.fg.withValues(alpha: 0.10));
+    }
+
+    final base = e.rows - 2.0;
+
+    // Plantas de fundo: mais baixas e apagadas, atrás das principais.
+    final bpc = th.plant.withValues(alpha: 0.32);
+    for (final p in e.backPlants) {
+      for (var i = 0; i < p.height; i++) {
+        final dx =
+            sin(e.time * p.freq * 0.7 + p.phase + i * 0.7) * 0.12 * (i + 1);
+        final c = i == p.height - 1 ? '~' : (i.isEven ? '(' : ')');
+        text(c, p.x + dx, base - i, bpc);
+      }
+    }
+
+    // Areia com dunas suaves.
     if (_sandCols != e.cols) {
       _sandCols = e.cols;
       _sand = List.generate(e.cols, (i) => '.:.,.'[i % 5]).join();
     }
-    text(_sand, 0, e.rows - 1.0, th.dirt);
+    if (_duneSize != size || _duneRows != e.rows) {
+      _duneSize = size;
+      _duneRows = e.rows;
+      final top = (e.rows - 1.0) * ch + ch * 0.2;
+      _dune
+        ..reset()
+        ..moveTo(0, size.height);
+      for (var x = 0.0; x <= size.width + 6; x += 6) {
+        _dune.lineTo(
+          x,
+          top + (sin(x * 0.035) + sin(x * 0.013 + 1.3)) * ch * 0.14,
+        );
+      }
+      _dune
+        ..lineTo(size.width + 6, size.height)
+        ..close();
+    }
+    canvas.drawPath(_dune, _fill..color = th.sand.withValues(alpha: 0.30));
+    text(_sand, 0, e.rows - 1.0, th.sand);
+    if (e.cols >= 24) {
+      // estrelas-do-mar e seixos na areia
+      text('*', e.cols * 0.07, e.rows - 1.0, const Color(0xFFE8825A));
+      text('*', e.cols * 0.64, e.rows - 1.0, const Color(0xFFF2A65A));
+      text('o', e.cols * 0.30, e.rows - 1.0, th.rock);
+      text('o', e.cols * 0.82, e.rows - 1.0, th.rock);
+    }
 
     // Decorações estáticas.
-    final base = e.rows - 2.0;
     if (owned.contains('decor_rocks')) {
-      text(r'/\', e.cols * 0.2, base, th.dirt);
-      text(r'_/\_', e.cols * 0.72, base, th.dirt);
+      final hi = Color.lerp(th.rock, const Color(0xFFFFFFFF), 0.25)!;
+      void rock(double col, String top, String bottom) {
+        text(top, col + 1, base - 1, hi);
+        text(bottom, col, base, th.rock);
+      }
+
+      rock(e.cols * 0.2, r'/\', r'/__\');
+      rock(e.cols * 0.72, r'_/\_', r'/____\');
     }
     if (owned.contains('decor_shells')) {
       text('@', e.cols * 0.45, base, th.food);
@@ -171,6 +298,24 @@ class AquariumPainter extends CustomPainter {
       text('|^|^|^|', cx, base - 2, th.fg.withValues(alpha: 0.7));
       text('|[_ _]|', cx, base - 1, th.fg.withValues(alpha: 0.7));
       text('|_| |_|', cx, base, th.fg.withValues(alpha: 0.7));
+    }
+
+    if (owned.contains('decor_coral') && e.rows >= 9) {
+      final cx = e.cols * 0.06;
+      text(r'\|/ Y', cx, base - 2, const Color(0xFFFFA08F));
+      text(r' |\/|', cx, base - 1, const Color(0xFFFF7A6B));
+      text(r' \||/', cx, base, const Color(0xFFE0584A));
+    }
+    if (owned.contains('decor_anemone')) {
+      final cx = e.cols * 0.33;
+      final sway = (e.time * 1.6).floor().isEven;
+      text(
+        sway ? r'\|/|\|/' : r'/|\|/|\',
+        cx,
+        base - 1,
+        const Color(0xFFFF8AD0),
+      );
+      text('(_____)', cx, base, const Color(0xFFC2417F));
     }
 
     // Plantas ondulantes.
@@ -188,6 +333,26 @@ class AquariumPainter extends CustomPainter {
         }
         text(c, p.x + dx, base - i, th.plant);
       }
+    }
+
+    // Noite: escurece tudo que é cenário (peixe e partículas ficam por cima).
+    if (night > 0.02) {
+      canvas.drawRect(
+        waterRect,
+        _fill..color = const Color(0xFF020A1E).withValues(alpha: night * 0.40),
+      );
+    }
+    // Luz do aquário (LED): tinge a água, mais forte à noite.
+    final led = switch (game.settings.lightId) {
+      'light_blue' => const Color(0xFF4DA3FF),
+      'light_purple' => const Color(0xFFB07CFF),
+      _ => null,
+    };
+    if (led != null) {
+      canvas.drawRect(
+        waterRect,
+        _fill..color = led.withValues(alpha: 0.07 + 0.11 * night),
+      );
     }
 
     // Partículas.
@@ -278,6 +443,8 @@ class AquariumPainter extends CustomPainter {
       game.progress.level,
       facingRight: f.facing > 0,
       tail: f.tailPhase.floor(),
+      blink: f.blink,
+      mouth: f.mouthOpen,
     );
     // O corpo ondula suavemente: fase e amplitude vêm do motor (integradas no tempo, sem saltos).
     _wave(

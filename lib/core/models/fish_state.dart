@@ -9,12 +9,23 @@ class FishState {
   int width = 8;
   FishMode mode = FishMode.wandering;
   double tailPhase = 0;
+  bool blink = false;
+  bool mouthOpen = false;
 
   /// Fase e amplitude da onda do corpo (integradas no tempo: sem saltos ao mudar de velocidade).
   double wavePhase = 0;
   double waveAmp = 1;
 
   double get mouthX => facing > 0 ? x + width : x;
+}
+
+/// Silhueta distante cruzando o fundo (só decoração, sem interação).
+class Ghost {
+  Ghost(this.art, this.x, this.y, this.vx);
+  final String art;
+  double x;
+  double y;
+  double vx;
 }
 
 /// Companheiros (peixe pequeno / camarão).

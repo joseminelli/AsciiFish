@@ -4,6 +4,8 @@ class AppSettings {
     this.widgetMode = true,
     this.themeId = 'theme_oled',
     this.fishColorId = 'fcolor_default',
+    this.lightId = 'light_none',
+    this.dayNight = true,
     this.debugMode = false,
     this.fishReacts = true,
     this.autoHideHud = true,
@@ -21,6 +23,8 @@ class AppSettings {
   bool widgetMode; // fica atrás dos outros apps, como um widget de desktop
   String themeId;
   String fishColorId;
+  String lightId; // luz do aquário (LED)
+  bool dayNight; // fundo escurece à noite, seguindo o relógio
   bool debugMode;
   bool fishReacts; // peixe segue o mouse e pula quando clicam perto dele
   bool autoHideHud;
@@ -38,6 +42,8 @@ class AppSettings {
     'widgetMode': widgetMode,
     'themeId': themeId,
     'fishColorId': fishColorId,
+    'lightId': lightId,
+    'dayNight': dayNight,
     'debugMode': debugMode,
     'fishReacts': fishReacts,
     'autoHideHud': autoHideHud,
@@ -58,6 +64,8 @@ class AppSettings {
       widgetMode: j['widgetMode'] as bool? ?? d.widgetMode,
       themeId: j['themeId'] as String? ?? d.themeId,
       fishColorId: j['fishColorId'] as String? ?? d.fishColorId,
+      lightId: j['lightId'] as String? ?? d.lightId,
+      dayNight: j['dayNight'] as bool? ?? d.dayNight,
       debugMode: j['debugMode'] as bool? ?? d.debugMode,
       fishReacts: j['fishReacts'] as bool? ?? d.fishReacts,
       autoHideHud: j['autoHideHud'] as bool? ?? d.autoHideHud,

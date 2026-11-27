@@ -9,6 +9,29 @@ import 'package:ascii_fish_pet/core/simulation/progression_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('piscar e boca aberta mantêm a largura e espelham', () {
+    for (final lv in [1, 3, 6, 10, 15, 20]) {
+      final n = FishSprites.frame(lv, facingRight: false, tail: 0);
+      final b = FishSprites.frame(lv, facingRight: false, tail: 0, blink: true);
+      final m = FishSprites.frame(lv, facingRight: true, tail: 0, mouth: true);
+      expect(b.length, n.length);
+      expect(b, contains('-'));
+      expect(m.length, n.length);
+      expect(m.endsWith(')'), isTrue); // boca aberta virada para a direita
+    }
+  });
+
+  test('silhuetas cruzam o fundo e saem de cena', () {
+    final e = AquariumEngine(seed: 2)..resize(60, 16);
+    var seen = 0;
+    for (var i = 0; i < 60 * 200; i++) {
+      e.update(1 / 60);
+      if (e.ghosts.isNotEmpty) seen++;
+    }
+    expect(seen, greaterThan(0));
+    expect(e.ghosts.length, lessThanOrEqualTo(2));
+  });
+
   test(
     'sujeira aparece devagar (poucas em 2 min) e há corações quando feliz',
     () {

@@ -75,9 +75,17 @@ class FishSprites {
     int level, {
     required bool facingRight,
     required int tail,
+    bool blink = false,
+    bool mouth = false,
   }) {
-    final left = stageFor(level).body
+    var left = stageFor(level).body
         .replaceFirst('{T}', _tailFrames[tail % _tailFrames.length]);
+    if (blink) {
+      final i = left.indexOf(RegExp('[o°]'));
+      if (i >= 0) left = left.replaceRange(i, i + 1, '-'); // olho fechado
+    }
+    if (mouth && left.startsWith('<'))
+      left = '(${left.substring(1)}'; // boca aberta
     return facingRight ? mirrorSprite(left) : left;
   }
 

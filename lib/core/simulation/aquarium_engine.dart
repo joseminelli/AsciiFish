@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import '../models/critter_sprites.dart';
+import '../models/fish_sprites.dart';
 import '../models/fish_state.dart';
 import '../models/particle.dart';
 import '../models/plant.dart';
@@ -24,6 +25,8 @@ class AquariumEngine {
   final FishState fish = FishState();
   final List<Particle> particles = [];
   final List<Plant> plants = [];
+  final List<Plant> backPlants = []; // camada de fundo (mais baixa e apagada)
+  final List<Ghost> ghosts = []; // silhuetas distantes
   final List<Critter> companions = [];
 
   /// Escritos pelo controlador a cada frame.
@@ -44,6 +47,11 @@ class AquariumEngine {
   double _bubbleT = 1;
   double _dirtT = 30;
   double _heartT = 12;
+  double _blinkT = 3;
+  double _eatT = 0;
+  double _turnT = 0;
+  double _ghostT = 10;
+  int _lastFacing = 1;
   double _wanderT = 0;
   double _mouthT = 4;
   double _curiousT = 0;
@@ -123,6 +131,20 @@ class AquariumEngine {
 
   void _buildPlants() {
     plants.clear();
+    backPlants.clear();
+    final rb = Random(11);
+    final nb = (cols / 6).round().clamp(3, 20);
+    final maxB = max(2, (_wr * 0.3).floor());
+    for (var i = 0; i < nb; i++) {
+      backPlants.add(
+        Plant(
+          x: (i + 0.5) * cols / nb + (rb.nextDouble() - 0.5) * 3,
+          height: 1 + rb.nextInt(maxB),
+          freq: 0.8 + rb.nextDouble() * 0.8,
+          phase: rb.nextDouble() * pi * 2,
+        ),
+      );
+    }
     final r = Random(7);
     final n = (cols / (plantStyle == 1 ? 7 : 11)).round().clamp(2, 14);
     final maxH = max(2, (_wr * (plantStyle == 1 ? 0.55 : 0.4)).floor());
@@ -284,10 +306,55 @@ class AquariumEngine {
 
   void update(double dt) {
     time += dt;
+    _updateFace(dt);
+    _updateGhosts(dt);
     _spawn(dt);
     _updateFish(dt);
     _updateParticles(dt);
     _updateCompanions(dt);
+  }
+
+  /// Piscar de olho e boca aberta (ao comer ou com comida perto).
+  void _updateFace(double dt) {
+    final f = fish;
+    _blinkT -= dt;
+    if (_blinkT <= 0) {
+      f.blink = !f.blink;
+      _blinkT = f.blink ? 0.14 : 2.5 + _rnd.nextDouble() * 4;
+    }
+    if (_eatT > 0) _eatT -= dt;
+    if (_turnT > 0) _turnT -= dt;
+    var near = false;
+    final food = _nearestFood();
+    if (food != null) {
+      near = (food.x - f.mouthX).abs() < 4 && (food.y - f.y).abs() < 2;
+    }
+    f.mouthOpen = _eatT > 0 || near;
+  }
+
+  /// De vez em quando um peixe bem apagado cruza o fundo.
+  void _updateGhosts(double dt) {
+    for (final g in ghosts) {
+      g.x += g.vx * dt;
+    }
+    ghosts.removeWhere((g) => g.x < -16 || g.x > cols + 16);
+    _ghostT -= dt;
+    if (_ghostT <= 0) {
+      _ghostT = 20 + _rnd.nextDouble() * 30;
+      if (ghosts.length < 2 && cols >= 30) {
+        const arts = ['<o)><', '<°))))><', '<=°)))))))><'];
+        final right = _rnd.nextBool();
+        final art = arts[_rnd.nextInt(arts.length)];
+        ghosts.add(
+          Ghost(
+            right ? mirrorSprite(art) : art,
+            right ? -art.length.toDouble() : cols + 1.0,
+            _minY + _rnd.nextDouble() * (_maxY - _minY),
+            (right ? 1 : -1) * (1.5 + _rnd.nextDouble() * 1.5),
+          ),
+        );
+      }
+    }
   }
 
   void _spawn(double dt) {
@@ -491,6 +558,13 @@ class AquariumEngine {
     // Inversao de direcao com histerese: o peixe desacelera, passa por zero e entao vira.
     if (f.vx > 0.6 && f.facing < 0) f.facing = 1;
     if (f.vx < -0.6 && f.facing > 0) f.facing = -1;
+    if (f.facing != _lastFacing) {
+      _lastFacing = f.facing;
+      if (_turnT <= 0) {
+        _turnT = 3;
+        spawnBubbles(f.x + f.width / 2, f.y, 2 + _rnd.nextInt(2));
+      }
+    }
     // Animação calma: cauda no máximo ~3 trocas/s; onda 2,5–5 rad/s; amplitude suavizada.
     final sp = sqrt(f.vx * f.vx + f.vy * f.vy);
     f.tailPhase += dt * min(3.0, 1.0 + sp * 0.25);
@@ -513,6 +587,7 @@ class AquariumEngine {
       if (p.type != ParticleType.food) continue;
       if ((p.x - f.mouthX).abs() < 1.8 && (p.y - f.y).abs() < 1.4) {
         particles.remove(p);
+        _eatT = 0.45;
         onEat?.call(p);
         spawnBubbles(f.mouthX, f.y, p.bright ? 6 : 2, bright: p.bright);
       }

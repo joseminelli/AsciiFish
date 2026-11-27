@@ -14,7 +14,9 @@ class GameProgress {
     this.cleanCount = 0,
     this.interactCount = 0,
     DateTime? lastSavedAt,
-  }) : owned = owned ?? {'theme_oled', 'food_basic', 'fcolor_default'},
+  }) : owned =
+           owned ??
+           {'theme_oled', 'food_basic', 'fcolor_default', 'light_none'},
        achievements = achievements ?? {},
        daysCared = daysCared ?? {},
        lastSavedAt = lastSavedAt ?? DateTime.now();

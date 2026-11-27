@@ -13,6 +13,8 @@ class AsciiTheme {
     required this.food,
     required this.dirt,
     required this.bubble,
+    required this.sand,
+    required this.rock,
   });
 
   final String id;
@@ -26,6 +28,10 @@ class AsciiTheme {
   final Color food;
   final Color dirt;
   final Color bubble;
+
+  /// Areia do fundo e pedras (cores próprias, diferentes da sujeira).
+  final Color sand;
+  final Color rock;
 }
 
 const kThemes = [
@@ -41,6 +47,8 @@ const kThemes = [
     food: Color(0xFFE8D28A),
     dirt: Color(0xFF6B5B45),
     bubble: Color(0xFF7FB4D6),
+    sand: Color(0xFFA68B5B),
+    rock: Color(0xFF7C8794),
   ),
   AsciiTheme(
     id: 'theme_cyan',
@@ -54,6 +62,8 @@ const kThemes = [
     food: Color(0xFFFFE8A3),
     dirt: Color(0xFF3B6B73),
     bubble: Color(0xFF9FEFFF),
+    sand: Color(0xFFB5AD7E),
+    rock: Color(0xFF5F93A0),
   ),
   AsciiTheme(
     id: 'theme_phosphor',
@@ -67,6 +77,8 @@ const kThemes = [
     food: Color(0xFFC4FFCB),
     dirt: Color(0xFF14612A),
     bubble: Color(0xFF46E863),
+    sand: Color(0xFF2F9A45),
+    rock: Color(0xFF6FBF86),
   ),
   AsciiTheme(
     id: 'theme_amber',
@@ -80,6 +92,8 @@ const kThemes = [
     food: Color(0xFFFFE3A8),
     dirt: Color(0xFF6E4A14),
     bubble: Color(0xFFF0B455),
+    sand: Color(0xFFD1A55E),
+    rock: Color(0xFF8A7B66),
   ),
   AsciiTheme(
     id: 'theme_paper',
@@ -93,6 +107,8 @@ const kThemes = [
     food: Color(0xFF745810),
     dirt: Color(0xFF9A8C77),
     bubble: Color(0xFF5E86A8),
+    sand: Color(0xFFC9B58A),
+    rock: Color(0xFF77746D),
   ),
 ];
 
