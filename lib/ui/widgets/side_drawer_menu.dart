@@ -21,6 +21,8 @@ class SideDrawerMenu extends StatefulWidget {
 class _SideDrawerMenuState extends State<SideDrawerMenu> {
   int _tab = 0;
   ShopCategory _shopCat = ShopCategory.theme;
+  bool _openKeys = false; // opções: atalhos recolhidos
+  bool _openDebug = false;
   bool _onlyNew = false; // loja: esconde o que já foi comprado
 
   GameController get g => widget.game;
@@ -103,7 +105,9 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 child: AnimatedSwitcher(
                   duration: const Duration(milliseconds: 140),
                   child: ListView(
-                    key: ValueKey(_tab == 1 ? 'shop-$_shopCat-$_onlyNew' : 'tab-$_tab'),
+                    key: ValueKey(
+                      _tab == 1 ? 'shop-$_shopCat-$_onlyNew' : 'tab-$_tab',
+                    ),
                     padding: const EdgeInsets.all(10),
                     children: switch (_tab) {
                       0 => _status(th, base),
@@ -263,14 +267,16 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
                 fit: BoxFit.scaleDown,
                 child: Text.rich(
                   TextSpan(
-                    children: g.fishPalette(rainbowT).spans(
-                      sprite,
-                      FishSprites.zones(
-                        p.level,
-                        facingRight: false,
-                        stripes: g.fishStripes,
-                      ),
-                    ),
+                    children: g
+                        .fishPalette(rainbowT)
+                        .spans(
+                          sprite,
+                          FishSprites.zones(
+                            p.level,
+                            facingRight: false,
+                            stripes: g.fishStripes,
+                          ),
+                        ),
                   ),
                   style: base.copyWith(fontSize: 24),
                 ),
@@ -432,10 +438,7 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         children: [
           Text(
             '● ${g.progress.pearls} pérolas',
-            style: base.copyWith(
-              color: th.food,
-              fontWeight: FontWeight.bold,
-            ),
+            style: base.copyWith(color: th.food, fontWeight: FontWeight.bold),
           ),
           const Spacer(),
           InkWell(
@@ -450,44 +453,59 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
         ],
       ),
       const SizedBox(height: 8),
-      SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final c in ShopCategory.values)
-              Padding(
-                padding: const EdgeInsets.only(right: 6),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () => setState(() => _shopCat = c),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(12),
-                      color: _shopCat == c
-                          ? th.accent.withValues(alpha: 0.18)
-                          : null,
-                      border: Border.all(
+      LayoutBuilder(
+        builder: (_, box) {
+          final w = (box.maxWidth - 12) / 3;
+          return Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final c in ShopCategory.values)
+                SizedBox(
+                  width: w,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(6),
+                    onTap: () => setState(() => _shopCat = c),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(vertical: 5),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(6),
                         color: _shopCat == c
-                            ? th.accent
-                            : th.fg.withValues(alpha: 0.25),
+                            ? th.accent.withValues(alpha: 0.18)
+                            : th.fg.withValues(alpha: 0.05),
+                        border: Border.all(
+                          color: _shopCat == c
+                              ? th.accent
+                              : th.fg.withValues(alpha: 0.2),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      '${_catTitles[c]!} ${ownedIn(c)}/${totalIn(c)}',
-                      style: base.copyWith(
-                        fontSize: 11,
-                        color: _shopCat == c ? th.accent : th.fg,
+                      child: Column(
+                        children: [
+                          Text(
+                            _catTitles[c]!,
+                            style: base.copyWith(
+                              fontSize: 11,
+                              fontWeight: _shopCat == c
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              color: _shopCat == c ? th.accent : th.fg,
+                            ),
+                          ),
+                          Text(
+                            '${ownedIn(c)}/${totalIn(c)}',
+                            style: base.copyWith(
+                              fontSize: 9,
+                              color: th.fg.withValues(alpha: 0.55),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ),
-          ],
-        ),
+            ],
+          );
+        },
       ),
       const SizedBox(height: 10),
       if (items.isEmpty)
@@ -785,156 +803,300 @@ class _SideDrawerMenuState extends State<SideDrawerMenu> {
       ),
     );
     return [
-      const SizedBox(height: 10),
-      SwitchListTile(
-        dense: true,
-        contentPadding: EdgeInsets.zero,
-        title: Text('Modo debug (testes)', style: base),
-        value: g.settings.debugMode,
-        onChanged: g.setDebugMode,
+      _fold(
+        th,
+        base,
+        'Debug (testes)',
+        _openDebug,
+        () => _openDebug = !_openDebug,
+        [
+          SwitchListTile(
+            dense: true,
+            contentPadding: EdgeInsets.zero,
+            title: Text('Modo debug', style: base),
+            value: g.settings.debugMode,
+            onChanged: g.setDebugMode,
+          ),
+          if (g.settings.debugMode)
+            Wrap(
+              children: [
+                b('+500 pérolas', () => g.debugAddPearls(500)),
+                b('+1 nível', () => g.debugAddLevels(1)),
+                b('+5 níveis', () => g.debugAddLevels(5)),
+                b('Desbloquear tudo', g.debugUnlockAll),
+                b('Sujar a água', g.debugSpawnDirt),
+                b('Pular agora', g.debugJump),
+                b('Fome 10%', () => g.debugSetHunger(10)),
+                b('Fome 100%', () => g.debugSetHunger(100)),
+                b('Resetar progresso', g.debugReset),
+              ],
+            ),
+          if (g.settings.debugMode) ...[
+            Text(
+              'Hora do dia (debug): ${_fmtHour(g.debugHour)}',
+              style: base.copyWith(fontSize: 11),
+            ),
+            Slider(
+              min: 0,
+              max: 24,
+              divisions: 96,
+              value: g.debugHour.clamp(0, 24).toDouble(),
+              onChanged: g.setDebugHour,
+            ),
+            Wrap(
+              children: [
+                b('Madrugada 3h', () => g.setDebugHour(3)),
+                b('Manhã 7h', () => g.setDebugHour(7)),
+                b('Dia 13h', () => g.setDebugHour(13)),
+                b('Entardecer 18h', () => g.setDebugHour(18)),
+                b('Noite 23h', () => g.setDebugHour(23)),
+              ],
+            ),
+          ],
+        ],
       ),
-      if (g.settings.debugMode)
-        Wrap(
-          children: [
-            b('+500 pérolas', () => g.debugAddPearls(500)),
-            b('+1 nível', () => g.debugAddLevels(1)),
-            b('+5 níveis', () => g.debugAddLevels(5)),
-            b('Desbloquear tudo', g.debugUnlockAll),
-            b('Sujar a água', g.debugSpawnDirt),
-            b('Pular agora', g.debugJump),
-            b('Fome 10%', () => g.debugSetHunger(10)),
-            b('Fome 100%', () => g.debugSetHunger(100)),
-            b('Resetar progresso', g.debugReset),
-          ],
-        ),
-      if (g.settings.debugMode) ...[
-        Text(
-          'Hora do dia (debug): ${_fmtHour(g.debugHour)}',
-          style: base.copyWith(fontSize: 11),
-        ),
-        Slider(
-          min: 0,
-          max: 24,
-          divisions: 96,
-          value: g.debugHour.clamp(0, 24).toDouble(),
-          onChanged: g.setDebugHour,
-        ),
-        Wrap(
-          children: [
-            b('Madrugada 3h', () => g.setDebugHour(3)),
-            b('Manhã 7h', () => g.setDebugHour(7)),
-            b('Dia 13h', () => g.setDebugHour(13)),
-            b('Entardecer 18h', () => g.setDebugHour(18)),
-            b('Noite 23h', () => g.setDebugHour(23)),
-          ],
-        ),
-      ],
     ];
+  }
+
+  /// Seção recolhível (Atalhos, Debug): fechada por padrão para não poluir.
+  Widget _fold(
+    AsciiTheme th,
+    TextStyle base,
+    String title,
+    bool open,
+    VoidCallback toggle,
+    List<Widget> children,
+  ) {
+    return _card(
+      th,
+      base,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            onTap: () => setState(toggle),
+            child: Row(
+              children: [
+                Text(title, style: base.copyWith(color: th.accent)),
+                const Spacer(),
+                Text(
+                  open ? '▾' : '▸',
+                  style: base.copyWith(color: th.fg.withValues(alpha: 0.6)),
+                ),
+              ],
+            ),
+          ),
+          if (open) ...[const SizedBox(height: 6), ...children],
+        ],
+      ),
+    );
   }
 
   List<Widget> _options(AsciiTheme th, TextStyle base) {
     final s = g.settings;
-    Widget sw(String label, bool v, ValueChanged<bool> on) => SwitchListTile(
-      dense: true,
-      contentPadding: EdgeInsets.zero,
-      title: Text(label, style: base),
-      value: v,
-      onChanged: on,
+    final dim = base.copyWith(
+      fontSize: 10,
+      color: th.fg.withValues(alpha: 0.6),
     );
-    return [
-      sw(
-        'Modo widget (sob os apps, sobre o desktop)',
-        s.widgetMode,
-        g.setWidgetMode,
-      ),
-      sw('Sempre no topo', s.alwaysOnTop, g.setAlwaysOnTop),
-      sw(
-        'Peixe reage ao mouse (seguir / pular no clique)',
-        s.fishReacts,
-        g.setFishReacts,
-      ),
-      sw('Esconder HUD automaticamente', s.autoHideHud, g.setAutoHideHud),
-      sw('Ciclo dia e noite (segue o relógio)', s.dayNight, g.setDayNight),
-      sw(
-        StartupService.available
-            ? 'Iniciar com o Windows'
-            : 'Iniciar com o Windows (só no app instalado)',
-        g.launchAtStartup,
-        (v) => StartupService.available ? g.setLaunchAtStartup(v) : null,
-      ),
-      sw('Procurar atualizações ao abrir', s.autoUpdate, g.setAutoUpdate),
-      Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Versão ${g.appVersion.isEmpty ? '...' : g.appVersion}'
-              '${g.updateMsg.isEmpty ? '' : '\n${g.updateMsg}'}',
-              style: base.copyWith(fontSize: 11),
-            ),
-          ),
-          TextButton(
-            onPressed: g.updateBusy
-                ? null
-                : (g.update != null ? g.installUpdate : g.checkUpdates),
-            child: Text(
-              g.update != null
-                  ? '[ Instalar ${g.update!.version} ]'
-                  : '[ Procurar ]',
-              style: base.copyWith(color: th.accent, fontSize: 11),
-            ),
-          ),
-        ],
-      ),
-      Row(
-        children: [
-          Text('Quadros por segundo', style: base),
-          const Spacer(),
-          for (final f in const [60, 30, 20])
-            TextButton(
-              onPressed: () => g.setFps(f),
-              child: Text(
-                s.fps == f ? '[$f]' : ' $f ',
-                style: base.copyWith(
-                  color: s.fps == f ? th.accent : th.fg.withValues(alpha: 0.6),
-                  fontSize: 11,
-                ),
-              ),
-            ),
-        ],
-      ),
-      const SizedBox(height: 4),
-      Text('Tamanho da fonte: ${s.fontSize.round()}'),
-      Slider(
-        min: 10,
-        max: 20,
-        divisions: 10,
-        value: s.fontSize.clamp(10, 20).toDouble(),
-        onChanged: g.setFontSize,
-      ),
-      Text('Altura do aquário: ${(s.windowHeight ?? 200).round()} px'),
-      Slider(
-        min: 140,
-        max: 420,
-        divisions: 28,
-        value: (s.windowHeight ?? 200).clamp(140, 420).toDouble(),
-        onChanged: g.setWindowHeight,
-      ),
-      Align(
-        alignment: Alignment.centerLeft,
-        child: TextButton(
-          onPressed: g.snapToCorner,
-          child: Text(
-            '[ Reencaixar na barra de tarefas ]',
-            style: base.copyWith(color: th.accent, fontSize: 11),
+    Widget sw(String label, String hint, bool v, ValueChanged<bool> on) =>
+        SwitchListTile(
+          dense: true,
+          visualDensity: VisualDensity.compact,
+          contentPadding: EdgeInsets.zero,
+          title: Text(label, style: base),
+          subtitle: Text(hint, style: dim),
+          value: v,
+          onChanged: on,
+        );
+    Widget slider(
+      String label,
+      String value,
+      double v,
+      double min,
+      double max,
+      int div,
+      ValueChanged<double> on,
+    ) => Column(
+      children: [
+        Row(
+          children: [
+            Text(label, style: base),
+            const Spacer(),
+            Text(value, style: base.copyWith(color: th.accent, fontSize: 11)),
+          ],
+        ),
+        SizedBox(
+          height: 28,
+          child: Slider(
+            min: min,
+            max: max,
+            divisions: div,
+            value: v.clamp(min, max).toDouble(),
+            onChanged: on,
           ),
         ),
+      ],
+    );
+    Widget link(String label, VoidCallback? f) => Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+        ),
+        onPressed: f,
+        child: Text(
+          '[ $label ]',
+          style: base.copyWith(color: th.accent, fontSize: 11),
+        ),
       ),
-      const SizedBox(height: 8),
-      Text('Atalhos', style: base.copyWith(color: th.accent)),
-      Text(
-        'Ctrl+clique alimentar onde clicar (na água)\nCtrl+Alt+F  alimentar no X do mouse (global)\nF / Espaço  idem (com a janela em foco)\nC            limpar\nEsc          fechar menu\nClique       limpar sujeira / carinho no peixe',
-        style: base.copyWith(fontSize: 11),
+    );
+
+    return [
+      _card(
+        th,
+        base,
+        title: 'Janela',
+        child: Column(
+          children: [
+            sw(
+              'Modo widget',
+              'Fica sob os apps, sobre o papel de parede.',
+              s.widgetMode,
+              g.setWidgetMode,
+            ),
+            sw(
+              'Sempre no topo',
+              'Fica por cima de tudo, até de tela cheia.',
+              s.alwaysOnTop,
+              g.setAlwaysOnTop,
+            ),
+            slider(
+              'Altura',
+              '${(s.windowHeight ?? 200).round()} px',
+              (s.windowHeight ?? 200).toDouble(),
+              140,
+              420,
+              28,
+              g.setWindowHeight,
+            ),
+            link('Reencaixar na barra de tarefas', g.snapToCorner),
+          ],
+        ),
       ),
+      _card(
+        th,
+        base,
+        title: 'Aquário',
+        child: Column(
+          children: [
+            sw(
+              'Peixe reage ao mouse',
+              'Segue o cursor e pula no clique.',
+              s.fishReacts,
+              g.setFishReacts,
+            ),
+            sw(
+              'Ciclo dia e noite',
+              'Escurece à noite, seguindo o relógio.',
+              s.dayNight,
+              g.setDayNight,
+            ),
+            sw(
+              'Esconder HUD sozinho',
+              'Os botões somem quando o mouse sai.',
+              s.autoHideHud,
+              g.setAutoHideHud,
+            ),
+            slider(
+              'Fonte',
+              '${s.fontSize.round()}',
+              s.fontSize,
+              10,
+              20,
+              10,
+              g.setFontSize,
+            ),
+            Row(
+              children: [
+                Text('Quadros por segundo', style: base),
+                const Spacer(),
+                for (final f in const [60, 30, 20])
+                  InkWell(
+                    onTap: () => g.setFps(f),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 6,
+                      ),
+                      child: Text(
+                        s.fps == f ? '[$f]' : ' $f ',
+                        style: base.copyWith(
+                          color: s.fps == f
+                              ? th.accent
+                              : th.fg.withValues(alpha: 0.6),
+                          fontSize: 11,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Menos quadros = menos CPU.', style: dim),
+            ),
+          ],
+        ),
+      ),
+      _card(
+        th,
+        base,
+        title: 'Sistema',
+        child: Column(
+          children: [
+            sw(
+              'Iniciar com o Windows',
+              StartupService.available
+                  ? 'Abre junto com o computador.'
+                  : 'Só no app instalado.',
+              g.launchAtStartup,
+              (v) => StartupService.available ? g.setLaunchAtStartup(v) : null,
+            ),
+            sw(
+              'Procurar atualizações',
+              'Verifica ao abrir o app.',
+              s.autoUpdate,
+              g.setAutoUpdate,
+            ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Versão ${g.appVersion.isEmpty ? '...' : g.appVersion}'
+                    '${g.updateMsg.isEmpty ? '' : '\n${g.updateMsg}'}',
+                    style: dim,
+                  ),
+                ),
+                link(
+                  g.update != null
+                      ? 'Instalar ${g.update!.version}'
+                      : 'Procurar',
+                  g.updateBusy
+                      ? null
+                      : (g.update != null ? g.installUpdate : g.checkUpdates),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+      _fold(th, base, 'Atalhos', _openKeys, () => _openKeys = !_openKeys, [
+        Text(
+          'Ctrl+clique   alimentar onde clicar\nCtrl+Alt+F    alimentar no X do mouse (global)\nF / Espaço    alimentar (janela em foco)\nC             limpar\nEsc           fechar menu\nClique        limpar sujeira / carinho no peixe',
+          style: dim.copyWith(fontSize: 11),
+        ),
+      ]),
     ];
   }
 }
