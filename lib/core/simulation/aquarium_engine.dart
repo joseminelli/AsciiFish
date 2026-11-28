@@ -378,7 +378,7 @@ class AquariumEngine {
           right ? -4.0 - dx : cols + 1.0 + dx,
           (baseY + (_rnd.nextDouble() - 0.5) * 4).clamp(_minY, _maxY),
           speed * (0.95 + _rnd.nextDouble() * 0.1),
-          alpha: 0.28,
+          alpha: 0.55,
           phase: _rnd.nextDouble() * 6.28,
           school: true,
         ),
